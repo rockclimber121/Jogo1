@@ -1,0 +1,31 @@
+<head>
+	<script type="text/javascript" src="jquery 2.02.js"></script>
+	<script type="text/javascript" src="Levels.js"></script>
+    <script type="text/javascript" src="GameWindow.js"></script>
+    <link rel="stylesheet" type="text/css" href="Main.css">
+</head>
+<body>
+    <div id="LevelsBlock" class="LevelsBlock"></div>
+    <div id="GameBlock" class="GameBlock">
+        <!-- Размеры canvas должны указываться именно через атрибуты, а не через стили.
+        Иначе все изображение будет масштабироваться относительно стандартных размеров 300 на 150.-->
+        <canvas id="GameField" class="Canvas" width="800" height="600">
+        </canvas>
+    </div>
+	<script LANGUAGE="javascript">
+		var levelsBlock = $("#LevelsBlock");
+
+        var countLevels = 0;
+        var html = "";
+        var levels = Levels.GetAllLevels();
+        $.each(levels, function(){
+            var levelCaption = 'Level' + countLevels;
+            Levels[levelCaption] = this;
+            var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField')";
+            html += '<a href="#" onclick="javascript:' + callMethod +'">' + levelCaption + '</a>';
+            countLevels++;
+        });
+
+		levelsBlock.html(html);
+	</script>
+</body>
