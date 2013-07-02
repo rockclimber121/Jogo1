@@ -22,7 +22,7 @@
             var levelCaption = 'Level' + countLevels;
             Levels[levelCaption] = this;
             var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField')";
-            html += '<a href="#" onclick="javascript:' + callMethod +'">' + levelCaption + '</a>';
+            html += '<a href="#" class="LevelLink" onclick="javascript:' + callMethod +'">' + levelCaption + '</a>';
             countLevels++;
         });
 

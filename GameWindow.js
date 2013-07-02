@@ -4,6 +4,11 @@
 var cellSize = 50;
 
 /**
+ * Ширина стенки между ячейками. Стенкой считается непреодолимое препятсвие.
+ */
+var wallWidth = 3;
+
+/**
  * Окно игры. Отдельный фрейм с игровым полем. Содержит методы по работе с ним.
  */
 var GameWindow = {
@@ -23,35 +28,64 @@ var GameWindow = {
         var canvas = document.getElementById(canvasId);
         var context = canvas.getContext("2d");
 
-        for(i = 0; i < cells.length; i++)
+        for(i = 0; i < cells.length; i++){
             for(j = 0; j < cells[i].length; j++){
                 var cell = cells[i][j];
+                context.beginPath();
+
+                // Рисуем ячейки
                 switch (cell.Value){
                     case 0:
                         // рисуем пустую клетку (очищаем её)
                         context.fillStyle = 'white';
-                        context.fillRect(cell.X, cell.Y, cell.Width, cell.Height);
+                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
                         break;
                     case 1:
                         // рисуем печать
-                        context.fillStyle = 'black';
-                        context.fillRect(cell.X, cell.Y, cell.Width, cell.Height);
+                        context.fillStyle = 'orange';
+                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
                         break;
                     case 2:
                         // рисуем демона
                         context.fillStyle = 'red';
-                        context.fillRect(cell.X, cell.Y, cell.Width, cell.Height);
+                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
                         break;
                     case 3:
                         // рисуем героя
                         context.fillStyle = 'blue';
-                        context.fillRect(cell.X, cell.Y, cell.Width, cell.Height);
+                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
                         break;
                     case 4:
                         // рисуем дом
                         context.fillStyle = 'green';
-                        context.fillRect(cell.X, cell.Y, cell.Width, cell.Height);
+                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
                         break;
+                }
+
+                context.fill();
+                context.lineWidth = 1;
+                context.strokeStyle = 'black';
+                context.stroke();
+            }
+        }
+
+        // Рисуем стенки после всего, чтобы они были поверх.
+        context.lineWidth = wallWidth;
+        for(i = 0; i < cells.length; i++)
+            for(j = 0; j < cells[i].length; j++){
+                var cell = cells[i][j];
+
+                if(cell.RightWall) {
+                    context.beginPath();
+                    context.moveTo(cell.X + cell.Width - wallWidth/2, cell.Y);
+                    context.lineTo(cell.X + cell.Width - wallWidth/2, cell.Y + cell.Height);
+                    context.stroke();
+                }
+                else if(cell.BottomWall) {
+                    context.beginPath();
+                    context.moveTo(cell.X, cell.Y + cell.Height - wallWidth/2);
+                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height - wallWidth/2);
+                    context.stroke();
                 }
             }
     },
@@ -79,8 +113,8 @@ var GameWindow = {
         // ШАГ 1. Подготавливаем все к отрисовке клеток и стенок.
 
         var center = { X: canvas.width/2, Y: canvas.height/2 };
-        var countCellsInRow = (field[0].length + 1)/2;
         var countCellsInCol = (field.length + 1)/2;
+        var countCellsInRow = (field[0].length + 1)/2;
         cells = [];
 
         for(i = 0; i < countCellsInCol; i++){
@@ -88,11 +122,11 @@ var GameWindow = {
             for(j = 0; j < countCellsInRow; j++){
                 //собираем ячейку
                 var newCell = {
-                    X: center.X + ((j - countCellsInRow/2)|0) * cellSize,
-                    Y: center.Y + ((i - countCellsInCol/2)|0) * cellSize,
+                    X: center.X + (j - (countCellsInRow/2|0)) * cellSize,
+                    Y: center.Y + (i - (countCellsInCol/2|0)) * cellSize,
                     Width: cellSize,
                     Height: cellSize,
-                    Value: field[j*2][i*2],
+                    Value: field[i*2][j*2],
                     Row: i,
                     Col: j,
                     RightWall: false,
@@ -121,12 +155,12 @@ var GameWindow = {
                 // Если четная строчка, то стенки на нечетных позициях.
                 // Проверка при делении по модулю 2 перевернута из-за того что индексы идут с 0.
 
-                if(i%2 == 0 && j%2 == 1){
-                    cells[j/2 - 1/2][i/2].RightWall = true;
+                if(i%2 == 0 && j%2 == 1 && field[i][j] == 1){
+                    cells[i/2][j/2 - 1/2].RightWall = true;
                 }
 
-                if(i%2 == 1 && j%2 == 0){
-                    cells[j/2][i/2 - 1/2].BottomWall = true;
+                if(i%2 == 1 && j%2 == 0 && field[i][j] == 1){
+                    cells[i/2 - 1/2][j/2].BottomWall = true;
                 }
             }
         }

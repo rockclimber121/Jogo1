@@ -32,6 +32,15 @@ var Levels = {
 				[3, 1, 0]
 			]
 		});
+
+        levels.push({
+            home: [0, 0],
+            field: [
+                [4, 1, 0, 0, 2],
+                [0, 0, 1, 0, 0],
+                [3, 0, 0, 0, 0]
+            ]
+        });
 		
 		return levels;
 	}
