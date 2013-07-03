@@ -1,18 +1,39 @@
 /**
- * Размер квадратной ячейки
- */
-var cellSize = 50;
-
-/**
- * Ширина стенки между ячейками. Стенкой считается непреодолимое препятсвие.
- */
-var wallWidth = 3;
-
-/**
  * Окно игры. Отдельный фрейм с игровым полем. Содержит методы по работе с ним.
  */
 var GameWindow = {
     canvas : undefined,
+
+    /**
+     * Настройки отображения ячеек
+     */
+    cellOptions : {
+        size: 50, // Размер квадратной ячейки
+        fillColor: 'transparent', // Фон
+        strokeWidth: 1, // Ширина границы
+        strokeColor: 'white' // Цвет границы
+    },
+
+    /**
+     * Настройки отображения стен между ячейками (стенкой считается непреодолимое препятсвие)
+     */
+    wallOptions : {
+        width: 6, // Толщина стенки
+        color: 'black', // Цвет стенки
+        lineCap: 'round' // Тип наконечника линии (context.lineCap: butt, round, square)
+    },
+
+    /**
+     * Графические ресурсы игрового поля
+     */
+    imageResources : {
+        enemy: "enemy.png", // вражеский персонаж с силой 1
+        enemy2: "enemy2.png", // вражеский персонаж с силой 2
+        hero: "hero.png", // герой
+        house: "house.png", // дом - цель героя
+        snag: "snag.png", // препятствие, на котором вражеский персонаж потеряет игровые ходы
+        hell: "hell.png" // фон игрового поля
+    },
 
     /**
      * Текущая ячейка в которой стоит герой. Формат ячейки описан в матрице ячеек.
@@ -29,6 +50,11 @@ var GameWindow = {
     cells : undefined,
 
     /**
+     * Графика для игрового поля
+     */
+    images : undefined,
+
+    /**
      * Ячейка с домом.
      */
     cellOuterHome : undefined,
@@ -38,55 +64,64 @@ var GameWindow = {
      */
     Refresh : function(){
         var context = GameWindow.canvas.getContext("2d");
+        var cellOptions = this.cellOptions;
 
-        for(var i = 0; i < this.cells.length; i++) {
-            for(var j = 0; j < this.cells[i].length; j++) {
+        // рисуем фон
+        context.drawImage(this.images.hell, 0, 0);
+
+        // Отрисовка изображения по центру ячейки
+        var drawImageInCell = function(cell, img) {
+            var x = cell.X + (cellOptions.size - img.naturalWidth) / 2,
+                y = cell.Y + (cellOptions.size - img.naturalHeight) / 2;
+            context.drawImage(img, x, y);
+        };
+
+        for(var i = 0; i < this.cells.length; i++){
+            for(var j = 0; j < this.cells[i].length; j++){
                 var cell = this.cells[i][j];
                 context.beginPath();
 
-                if(cell.MonsterPower > 0){
+                context.fillStyle = this.cellOptions.fillColor;
+                context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                context.fill();
+
+                context.lineWidth = this.cellOptions.strokeWidth;
+                context.strokeStyle = this.cellOptions.strokeColor;
+                context.stroke();
+
+                // Рисуем ячейки
+                switch (cell.Value) {
+                    case Levels.Empty:
+                        // рисуем пустую клетку (очищаем её)
+                        break;
+                    case Levels.Trap:
+                    case Levels.MonsterOnTrap:
+                        // рисуем печать
+                        drawImageInCell(cell, this.images.snag);
+                        break;
+                    case Levels.Home:
+                    case Levels.MonsterOnHome:
+                        // рисуем дом
+                        drawImageInCell(cell, this.images.house);
+                        break;
+                    case Levels.Hero:
+                        // рисуем героя
+                        drawImageInCell(cell, this.images.hero);
+                        break;
+                }
+
+                if(cell.MonsterPower > 0) {
                     switch(cell.MonsterPower) {
                         case 2:
                             // рисуем монстра с силой 1.
-                            context.fillStyle = 'red';
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            drawImageInCell(cell, this.images.enemy);
                             break;
                         case 3:
                             // рисуем монстра с силой 2.
-                            context.fillStyle = "pink";
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                            break;
-                    }
-                } else {
-                    // Рисуем ячейки
-                    switch (cell.Value) {
-                        case Levels.Empty:
-                            // рисуем пустую клетку (очищаем её)
-                            context.fillStyle = 'white';
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                            break;
-                        case Levels.Trap:
-                            // рисуем печать
-                            context.fillStyle = 'orange';
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                            break;
-                        case Levels.Home:
-                            // рисуем дом
-                            context.fillStyle = 'green';
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                            break;
-                        case Levels.Hero:
-                            // рисуем героя
-                            context.fillStyle = 'blue';
-                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            drawImageInCell(cell, this.images.enemy2);
                             break;
                     }
                 }
-
-                context.fill();
-                context.lineWidth = 1;
-                context.strokeStyle = 'black';
-                context.stroke();
             }
         }
 
@@ -95,7 +130,7 @@ var GameWindow = {
             context.beginPath();
             context.fillStyle = 'green';
             context.rect(this.cellOuterHome.X, this.cellOuterHome.Y,
-                         this.cellOuterHome.Width, this.cellOuterHome.Height);
+                this.cellOuterHome.Width, this.cellOuterHome.Height);
             context.fill();
             context.lineWidth = 1;
             context.strokeStyle = 'black';
@@ -103,27 +138,27 @@ var GameWindow = {
         }
 
         // Рисуем стенки после всего, чтобы они были поверх.
-        // Рисуем только правые и нижние стенки, чтобы не дублировать их.
-        context.lineWidth = wallWidth;
-        for(i = 0; i < this.cells.length; i++) {
-            for (j = 0; j < this.cells[i].length; j++) {
+        context.strokeStyle = this.wallOptions.color;
+        context.lineWidth = this.wallOptions.width;
+        context.lineCap = this.wallOptions.lineCap;
+        for(i = 0; i < this.cells.length; i++)
+            for(j = 0; j < this.cells[i].length; j++){
                 var cell = this.cells[i][j];
 
-                if (cell.RightWall) {
+                if(cell.RightWall) {
                     context.beginPath();
-                    context.moveTo(cell.X + cell.Width - wallWidth / 2, cell.Y);
-                    context.lineTo(cell.X + cell.Width - wallWidth / 2, cell.Y + cell.Height);
+                    context.moveTo(cell.X + cell.Width, cell.Y);
+                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
                     context.stroke();
                 }
 
-                if (cell.BottomWall) {
+                if(cell.BottomWall) {
                     context.beginPath();
-                    context.moveTo(cell.X, cell.Y + cell.Height - wallWidth / 2);
-                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height - wallWidth / 2);
+                    context.moveTo(cell.X, cell.Y + cell.Height);
+                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
                     context.stroke();
                 }
             }
-        }
     },
 
     /**
@@ -132,9 +167,19 @@ var GameWindow = {
      * @param {string} caption заголовок формы
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
-   Show : function(level, caption, canvasId){
+    Show : function(level, caption, canvasId){
         var home = level["home"];
         var field = level["field"];
+
+        // загружаем графические ресурсы
+        if (!this.images) {
+            this.images = {};
+            for (var imgKey in this.imageResources) {
+                var img = new Image();
+                img.src = this.imageResources[imgKey];
+                this.images[imgKey] = img;
+            }
+        }
 
         // очищаем поле
         var canvas = document.getElementById(canvasId);
@@ -143,9 +188,7 @@ var GameWindow = {
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         // рисуем фон
-        var img = new Image();
-        img.src = "Hell1.JPG";
-        context.drawImage(img, 0, 0);
+        context.drawImage(this.images.hell, 0, 0);
 
         // ШАГ 1. Подготавливаем все к отрисовке клеток и стенок.
 
@@ -170,10 +213,10 @@ var GameWindow = {
 
                 //собираем ячейку
                 var newCell = {
-                    X: center.X + (j - (countCellsInRow/2|0)) * cellSize,
-                    Y: center.Y + (i - (countCellsInCol/2|0)) * cellSize,
-                    Width: cellSize,
-                    Height: cellSize,
+                    X: center.X + (j - (countCellsInRow/2|0)) * this.cellOptions.size,
+                    Y: center.Y + (i - (countCellsInCol/2|0)) * this.cellOptions.size,
+                    Width: this.cellOptions.size,
+                    Height: this.cellOptions.size,
                     Value: valueForSet,
                     Row: i,
                     Col: j,
@@ -189,11 +232,11 @@ var GameWindow = {
 
                 // если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали
                 if(countCellsInRow%2 == 1)
-                    newCell.X -= cellSize/2;
+                    newCell.X -= this.cellOptions.size/2;
 
                 // если ячеек в столбце нечетное количество, то сдвигаем на пол ячейки по вертикали
                 if(countCellsInCol)
-                    newCell.Y -= cellSize/2;
+                    newCell.Y -= this.cellOptions.size/2;
 
                 this.cells[i][j] = newCell;
 
@@ -263,9 +306,9 @@ var GameWindow = {
             }
         }
 
-       // Шаг 3. Рисуем все.
-       GameWindow.Refresh();
-   },
+        // Шаг 3. Рисуем все.
+        GameWindow.Refresh();
+    },
 
     /**
      * Возвращает объект ячейки из матрицы находящуюся по указанным координатам.
@@ -274,13 +317,13 @@ var GameWindow = {
      * @returns {object|undefined} Ячейка из матрицы находящуюся по указанным координатам.
      * Если ячейка не будет найдена вернет undefined.
      */
-   GetCellByCoordinates : function(x, y){
+    GetCellByCoordinates : function(x, y){
         // Сначала проверим не попали ли мы в дом, которыц вне матрицы.
         if(this.cellOuterHome){
             var deltaX = x - this.cellOuterHome.X;
             var deltaY = y - this.cellOuterHome.Y;
 
-            if(deltaX > 0 && deltaX <= cellSize && deltaY > 0 && deltaY <= cellSize)
+            if(deltaX > 0 && deltaX <= this.cellOptions.size && deltaY > 0 && deltaY <= this.cellOptions.size)
                 return this.cellOuterHome;
         }
 
@@ -288,27 +331,27 @@ var GameWindow = {
         var startX = this.cells[0][0].X;
         var startY = this.cells[0][0].Y;
 
-        var i = ((y - startY)/cellSize)|0;
-        var j = ((x - startX)/cellSize)|0;
+        var i = ((y - startY)/this.cellOptions.size)|0;
+        var j = ((x - startX)/this.cellOptions.size)|0;
 
         if(i < this.cells.length && j < this.cells[i].length)
             return this.cells[i][j];
-   },
+    },
 
     /**
      * Возвращает массив ячеек с мострами из текущей матрицы.
      * @returns {Array} Массив ячеек с мострами из текущей матрицы.
      */
-   GetCellsWithMonsters : function(){
-       var cellsWithMonsters = [];
+    GetCellsWithMonsters : function(){
+        var cellsWithMonsters = [];
 
-       for(var i = 0; i < this.cells.length; i++){
-           for(var j = 0; j < this.cells[i].length; j++){
-               if(this.cells[i][j].MonsterPower > 0)
-                   cellsWithMonsters.push(this.cells[i][j]);
-           }
-       }
+        for(var i = 0; i < this.cells.length; i++){
+            for(var j = 0; j < this.cells[i].length; j++){
+                if(this.cells[i][j].MonsterPower > 0)
+                    cellsWithMonsters.push(this.cells[i][j]);
+            }
+        }
 
-       return cellsWithMonsters;
-   }
+        return cellsWithMonsters;
+    }
 };
