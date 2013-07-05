@@ -40,41 +40,43 @@ var GameWindow = {
                 var cell = this.cells[i][j];
                 context.beginPath();
 
-                // Рисуем ячейки
-                switch (cell.Value) {
-                    case Levels.Empty:
-                        // рисуем пустую клетку (очищаем её)
-                        context.fillStyle = 'white';
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
-                    case Levels.Trap:
-                        // рисуем печать
-                        context.fillStyle = 'orange';
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
-                    case Levels.Home:
-                        // рисуем дом
-                        context.fillStyle = 'green';
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
-                    case Levels.Hero:
-                        // рисуем героя
-                        context.fillStyle = 'blue';
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
-                }
-
-                switch(cell.MonsterPower) {
-                    case 2:
-                        // рисуем монстра с силой 1.
-                        context.fillStyle = 'red';
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
-                    case 3:
-                        // рисуем монстра с силой 2.
-                        context.fillStyle = "pink";
-                        context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                        break;
+                if(cell.MonsterPower > 0){
+                    switch(cell.MonsterPower) {
+                        case 2:
+                            // рисуем монстра с силой 1.
+                            context.fillStyle = 'red';
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                        case 3:
+                            // рисуем монстра с силой 2.
+                            context.fillStyle = "pink";
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                    }
+                } else {
+                    // Рисуем ячейки
+                    switch (cell.Value) {
+                        case Levels.Empty:
+                            // рисуем пустую клетку (очищаем её)
+                            context.fillStyle = 'white';
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                        case Levels.Trap:
+                            // рисуем печать
+                            context.fillStyle = 'orange';
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                        case Levels.Home:
+                            // рисуем дом
+                            context.fillStyle = 'green';
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                        case Levels.Hero:
+                            // рисуем героя
+                            context.fillStyle = 'blue';
+                            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+                            break;
+                    }
                 }
 
                 context.fill();
@@ -140,6 +142,15 @@ var GameWindow = {
             this.cells[i] = [];
             for(var j = 0; j < countCellsInRow; j++){
                 var value = field[i*2][j*2];
+                var valueForSet = value;
+
+                if(value == Levels.Monster){
+                    valueForSet = Levels.Empty;
+                } else if(value == Levels.MonsterOnHome){
+                    valueForSet = Levels.Home;
+                } else if(value == Levels.MonsterOnTrap){
+                    valueForSet == Levels.Trap;
+                }
 
                 //собираем ячейку
                 var newCell = {
@@ -147,7 +158,7 @@ var GameWindow = {
                     Y: center.Y + (i - (countCellsInCol/2|0)) * cellSize,
                     Width: cellSize,
                     Height: cellSize,
-                    Value: value == Levels.Monster ? 0 : value, // под монстром по умолчанию пустая ячейка
+                    Value: valueForSet,
                     Row: i,
                     Col: j,
                     RightWall: false,
@@ -157,7 +168,7 @@ var GameWindow = {
                 };
 
                 // Если это монстр, то по умолчанию у него сила 2.
-                if(value == Levels.Monster)
+                if(value == Levels.Monster || value == Levels.MonsterOnHome || value == Levels.MonsterOnTrap)
                     newCell.MonsterPower = 2;
 
                 // если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали
