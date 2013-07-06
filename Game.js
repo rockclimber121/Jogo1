@@ -186,7 +186,7 @@ var Game = {
             });
 
             for(var i = 0; i < monstersForDelete.length; i ++){
-                Game.monsters = Game.monsters.slice(monstersForDelete[i]);
+                Game.monsters.splice(monstersForDelete[i], 1);
             }
         }
 
