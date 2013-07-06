@@ -170,6 +170,9 @@ var GameWindow = {
         var context = canvas.getContext("2d");
         context.clearRect(0, 0, canvas.width, canvas.height);
 
+        // рисуем фон
+        context.drawImage(this.images.hell, 0, 0);
+
         // ШАГ 1. Подготавливаем все к отрисовке клеток и стенок.
 
         var center = { X: canvas.width/2, Y: canvas.height/2 };
