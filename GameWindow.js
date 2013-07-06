@@ -29,8 +29,12 @@ var GameWindow = {
     cells : undefined,
 
     /**
+     * Ячейка с домом.
+     */
+    cellOuterHome : undefined,
+
+    /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
-     * @param {jQuery} canvas полотно для отрисовки содержимого окна
      */
     Refresh : function(){
         var context = GameWindow.canvas.getContext("2d");
@@ -84,6 +88,18 @@ var GameWindow = {
                 context.strokeStyle = 'black';
                 context.stroke();
             }
+        }
+
+        // Если есть дом вне поля, рисуем его.
+        if(this.cellOuterHome){
+            context.beginPath();
+            context.fillStyle = 'green';
+            context.rect(this.cellOuterHome.X, this.cellOuterHome.Y,
+                         this.cellOuterHome.Width, this.cellOuterHome.Height);
+            context.fill();
+            context.lineWidth = 1;
+            context.strokeStyle = 'black';
+            context.stroke();
         }
 
         // Рисуем стенки после всего, чтобы они были поверх.
@@ -187,7 +203,42 @@ var GameWindow = {
             }
         }
 
-        // TODO добавить дом в ячейки, если он был вне поля
+        this.cellOuterHome = undefined;
+
+        // если дом вне поля, то запоминаем это.
+        if(home[0] < 0 || home[1] < 0 || home[0] >= countCellsInCol || home[1] >= countCellsInRow){
+            var x, y;
+
+            if(home[1] < 0){
+                x = this.cells[0][0].X - cellSize;
+            } else if(home[1] >= countCellsInRow) {
+                x = this.cells[0][0].X + countCellsInRow * cellSize;
+            } else {
+                x = this.cells[0][0].X + home[1] * cellSize;
+            }
+
+            if(home[0] < 0){
+                y = this.cells[0][0].Y - cellSize;
+            } else if(home[1] >= countCellsInCol) {
+                y = this.cells[0][0].Y + countCellsInCol * cellSize;
+            } else {
+                y = this.cells[0][0].Y + home[0] * cellSize;
+            }
+
+            this.cellOuterHome = {
+                X: x,
+                Y: y,
+                Width: cellSize,
+                Height: cellSize,
+                Value: Levels.Home,
+                Row: home[0],
+                Col: home[1],
+                RightWall: false,
+                BottomWall: false,
+                LeftWall: false,
+                TopWall: false
+            };
+        }
 
         // Шаг 2. Подготавливаем стенки для отрисовки.
 
@@ -224,12 +275,18 @@ var GameWindow = {
      * Если ячейка не будет найдена вернет undefined.
      */
    GetCellByCoordinates : function(x, y){
+        // Сначала проверим не попали ли мы в дом, которыц вне матрицы.
+        if(this.cellOuterHome){
+            var deltaX = x - this.cellOuterHome.X;
+            var deltaY = y - this.cellOuterHome.Y;
+
+            if(deltaX > 0 && deltaX <= cellSize && deltaY > 0 && deltaY <= cellSize)
+                return this.cellOuterHome;
+        }
+
         // Определяем самый левый верхний угол матрицы.
         var startX = this.cells[0][0].X;
         var startY = this.cells[0][0].Y;
-
-        if(x < startX || y < startY)
-            return;
 
         var i = ((y - startY)/cellSize)|0;
         var j = ((x - startX)/cellSize)|0;
