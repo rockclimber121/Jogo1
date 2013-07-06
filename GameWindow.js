@@ -27,7 +27,8 @@ var GameWindow = {
      * Графические ресурсы игрового поля
      */
     imageResources : {
-        enemy: "enemy.png", // вражеский персонаж
+        enemy: "enemy.png", // вражеский персонаж с силой 1
+        enemy2: "enemy2.png", // вражеский персонаж с силой 2
         hero: "hero.png", // герой
         house: "house.png", // дом - цель героя
         snag: "snag.png", // препятствие, на котором вражеский персонаж потеряет игровые ходы
@@ -113,7 +114,7 @@ var GameWindow = {
                             break;
                         case 3:
                             // рисуем монстра с силой 2.
-                            drawImageInCell(cell, this.images.enemy);
+                            drawImageInCell(cell, this.images.enemy2);
                             break;
                     }
                 }
