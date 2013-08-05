@@ -259,7 +259,7 @@ var GameWindow = {
 
             if(home[0] < 0){
                 y = this.cells[0][0].Y - this.cellOptions.size;
-            } else if(home[1] >= countCellsInCol) {
+            } else if(home[0] >= countCellsInCol) {
                 y = this.cells[0][0].Y + countCellsInCol * this.cellOptions.size;
             } else {
                 y = this.cells[0][0].Y + home[0] * this.cellOptions.size;
