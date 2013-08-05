@@ -64,7 +64,8 @@ var GameWindow = {
      */
     Refresh : function(){
         var context = GameWindow.canvas.getContext("2d");
-        var cellOptions = this.cellOptions;
+        var cellOptions = this.cellOptions,
+            images = this.images;
 
         // рисуем фон
         context.drawImage(this.images.hell, 0, 0);
@@ -76,66 +77,62 @@ var GameWindow = {
             context.drawImage(img, x, y);
         };
 
+        // Отрисовка ячейки
+        var drawCell = function(cell) {
+            context.beginPath();
+
+            context.fillStyle = cellOptions.fillColor;
+            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
+            context.fill();
+
+            context.lineWidth = cellOptions.strokeWidth;
+            context.strokeStyle = cellOptions.strokeColor;
+            context.stroke();
+
+            // Рисуем ячейки
+            switch (cell.Value) {
+                case Levels.Empty:
+                    // рисуем пустую клетку (очищаем её)
+                    break;
+                case Levels.Trap:
+                case Levels.MonsterOnTrap:
+                    // рисуем печать
+                    drawImageInCell(cell, images.snag);
+                    break;
+                case Levels.Home:
+                case Levels.MonsterOnHome:
+                    // рисуем дом
+                    drawImageInCell(cell, images.house);
+                    break;
+                case Levels.Hero:
+                    // рисуем героя
+                    drawImageInCell(cell, images.hero);
+                    break;
+            }
+
+            if(cell.MonsterPower > 0) {
+                switch(cell.MonsterPower) {
+                    case 2:
+                        // рисуем монстра с силой 1.
+                        drawImageInCell(cell, images.enemy);
+                        break;
+                    case 3:
+                        // рисуем монстра с силой 2.
+                        drawImageInCell(cell, images.enemy2);
+                        break;
+                }
+            }
+        };
+
         for(var i = 0; i < this.cells.length; i++){
             for(var j = 0; j < this.cells[i].length; j++){
-                var cell = this.cells[i][j];
-                context.beginPath();
-
-                context.fillStyle = this.cellOptions.fillColor;
-                context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-                context.fill();
-
-                context.lineWidth = this.cellOptions.strokeWidth;
-                context.strokeStyle = this.cellOptions.strokeColor;
-                context.stroke();
-
-                // Рисуем ячейки
-                switch (cell.Value) {
-                    case Levels.Empty:
-                        // рисуем пустую клетку (очищаем её)
-                        break;
-                    case Levels.Trap:
-                    case Levels.MonsterOnTrap:
-                        // рисуем печать
-                        drawImageInCell(cell, this.images.snag);
-                        break;
-                    case Levels.Home:
-                    case Levels.MonsterOnHome:
-                        // рисуем дом
-                        drawImageInCell(cell, this.images.house);
-                        break;
-                    case Levels.Hero:
-                        // рисуем героя
-                        drawImageInCell(cell, this.images.hero);
-                        break;
-                }
-
-                if(cell.MonsterPower > 0) {
-                    switch(cell.MonsterPower) {
-                        case 2:
-                            // рисуем монстра с силой 1.
-                            drawImageInCell(cell, this.images.enemy);
-                            break;
-                        case 3:
-                            // рисуем монстра с силой 2.
-                            drawImageInCell(cell, this.images.enemy2);
-                            break;
-                    }
-                }
+                drawCell(this.cells[i][j]);
             }
         }
 
         // Если есть дом вне поля, рисуем его.
-        if(this.cellOuterHome){
-            context.beginPath();
-            context.fillStyle = 'green';
-            context.rect(this.cellOuterHome.X, this.cellOuterHome.Y,
-                this.cellOuterHome.Width, this.cellOuterHome.Height);
-            context.fill();
-            context.lineWidth = 1;
-            context.strokeStyle = 'black';
-            context.stroke();
-        }
+        if(this.cellOuterHome)
+            drawCell(this.cellOuterHome);
 
         // Рисуем стенки после всего, чтобы они были поверх.
         context.strokeStyle = this.wallOptions.color;
@@ -253,26 +250,26 @@ var GameWindow = {
             var x, y;
 
             if(home[1] < 0){
-                x = this.cells[0][0].X - cellSize;
+                x = this.cells[0][0].X - this.cellOptions.size;
             } else if(home[1] >= countCellsInRow) {
-                x = this.cells[0][0].X + countCellsInRow * cellSize;
+                x = this.cells[0][0].X + countCellsInRow * this.cellOptions.size;
             } else {
-                x = this.cells[0][0].X + home[1] * cellSize;
+                x = this.cells[0][0].X + home[1] * this.cellOptions.size;
             }
 
             if(home[0] < 0){
-                y = this.cells[0][0].Y - cellSize;
+                y = this.cells[0][0].Y - this.cellOptions.size;
             } else if(home[1] >= countCellsInCol) {
-                y = this.cells[0][0].Y + countCellsInCol * cellSize;
+                y = this.cells[0][0].Y + countCellsInCol * this.cellOptions.size;
             } else {
-                y = this.cells[0][0].Y + home[0] * cellSize;
+                y = this.cells[0][0].Y + home[0] * this.cellOptions.size;
             }
 
             this.cellOuterHome = {
                 X: x,
                 Y: y,
-                Width: cellSize,
-                Height: cellSize,
+                Width: this.cellOptions.size,
+                Height: this.cellOptions.size,
                 Value: Levels.Home,
                 Row: home[0],
                 Col: home[1],
