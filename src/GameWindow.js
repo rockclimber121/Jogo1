@@ -27,12 +27,12 @@ var GameWindow = {
      * Графические ресурсы игрового поля
      */
     imageResources : {
-        enemy: "enemy.png", // вражеский персонаж с силой 1
-        enemy2: "enemy2.png", // вражеский персонаж с силой 2
-        hero: "hero.png", // герой
-        house: "house.png", // дом - цель героя
-        snag: "snag.png", // препятствие, на котором вражеский персонаж потеряет игровые ходы
-        hell: "hell.png" // фон игрового поля
+        enemy: "images/enemy.png", // вражеский персонаж с силой 1
+        enemy2: "images/enemy2.png", // вражеский персонаж с силой 2
+        hero: "images/hero.png", // герой
+        house: "images/house.png", // дом - цель героя
+        snag: "images/snag.png", // препятствие, на котором вражеский персонаж потеряет игровые ходы
+        hell: "images/hell.png" // фон игрового поля
     },
 
     /**
