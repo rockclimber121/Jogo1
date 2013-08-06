@@ -167,18 +167,23 @@ var GameWindow = {
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
     Show : function(level, caption, canvasId){
-        var home = level["home"];
-        var field = level["field"];
-
         // загружаем графические ресурсы
         if (!this.images) {
-            this.images = {};
+            this.images = { loadQueue: Object.keys(GameWindow.imageResources).length };
+
             for (var imgKey in this.imageResources) {
                 var img = new Image();
+                img.onload = function() { GameWindow.images.loadQueue--; };
                 img.src = this.imageResources[imgKey];
                 this.images[imgKey] = img;
             }
         }
+
+        // ждем окончания загрузки графических ресурсов
+        if(this.images.loadQueue > 0) {
+            setTimeout(function () { GameWindow.Show(level, caption, canvasId); }, 100);
+            return;
+        };
 
         // очищаем поле
         var canvas = document.getElementById(canvasId);
@@ -190,6 +195,9 @@ var GameWindow = {
         context.drawImage(this.images.hell, 0, 0);
 
         // ШАГ 1. Подготавливаем все к отрисовке клеток и стенок.
+
+        var home = level["home"];
+        var field = level["field"];
 
         var center = { X: canvas.width/2, Y: canvas.height/2 };
         var countCellsInCol = (field.length + 1)/2;
