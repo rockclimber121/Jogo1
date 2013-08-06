@@ -31,10 +31,11 @@ var Game = {
      * Сбрасывает все параметры необходимые для конкретного уровня.
     */
     Refresh : function() {
-       this.monsters = [];
+        this.InitMonsters();
     },
 
     InitMonsters : function(){
+        Game.monsters = [];
         var cells = GameWindow.GetCellsWithMonsters();
         $.each(cells, function(){
             Game.monsters.push({
@@ -90,10 +91,21 @@ var Game = {
         }
     },
 
-    MoveMonsters : function(){
-        if(this.monsters.length == 0)
-            Game.InitMonsters();
+    /**
+     * Получить монстра в указанной ячейке.
+     * @param {object} cell Ячейка, в которой стоит монстр.
+     * @returns {object} Монстр, либо null, если в ячейке нет монстра.
+     */
+    GetMonsterInCell : function(cell){
+        for(var i = 0; i < Game.monsters.length; i++) {
+            if(Game.monsters[i].CurrentPosition == cell)
+                return Game.monsters[i];
+        }
 
+        return null;
+    },
+
+    MoveMonsters : function(){
         var getMonsterIndexByPosition = function(positionCell){
             for(var i = 0; i < Game.monsters.length; i++) {
                 if(Game.monsters[i].CurrentPosition == positionCell)

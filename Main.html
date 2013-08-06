@@ -24,7 +24,7 @@
         for(i = 0; i < levels.length; i++) {
             var levelCaption = 'Level' + i;
             Levels[levelCaption] = levels[i];
-            var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField'); Game.Refresh();";
+            var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField');";
             html += '<a href="#" class="LevelLink" onclick="javascript:' + callMethod +'">' + levelCaption + '</a>';
         }
 

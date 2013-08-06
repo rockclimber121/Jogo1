@@ -28,10 +28,11 @@ var GameWindow = {
      */
     imageResources : {
         enemy: "images/enemy.png", // вражеский персонаж с силой 1
+        trappedEnemy: "images/trappedEnemy.png", // вражеский персонаж с силой 1, застрявший в ловушке
         enemy2: "images/enemy2.png", // вражеский персонаж с силой 2
         hero: "images/hero.png", // герой
         house: "images/house.png", // дом - цель героя
-        snag: "images/snag.png", // препятствие, на котором вражеский персонаж потеряет игровые ходы
+        snag: "images/snag.png", // ловушка, на которой вражеский персонаж теряет игровые ходы
         hell: "images/hell.png" // фон игрового поля
     },
 
@@ -114,7 +115,8 @@ var GameWindow = {
                 switch(cell.MonsterPower) {
                     case 2:
                         // рисуем монстра с силой 1.
-                        drawImageInCell(cell, images.enemy);
+                        var monster = Game.GetMonsterInCell(cell);
+                        drawImageInCell(cell, (monster.SkipTurns == 0) ? images.enemy : images.trappedEnemy);
                         break;
                     case 3:
                         // рисуем монстра с силой 2.
@@ -304,6 +306,7 @@ var GameWindow = {
         }
 
         // Шаг 3. Рисуем все.
+        Game.Refresh();
         GameWindow.Refresh();
     },
 
