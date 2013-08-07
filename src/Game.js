@@ -140,7 +140,10 @@ var Game = {
                     }
                 }
 
-                if(monster.Steps > 0 && monster.SkipTurns == 0) {
+                if(monster.Steps > 0 && monster.SkipTurns == 0 &&
+                    // Если монстр уже стоит на ловушке и пытается в неё же сходить, то он останется на месте.
+                    (nextCell !== monster.CurrentPosition || monster.CurrentPosition.Value != Levels.Trap)) {
+
                     // передвигаем монстра в новую ячейку.
                     monster.CurrentPosition.MonsterPower = 0;
                     monster.CurrentPosition = nextCell;
