@@ -123,7 +123,7 @@ var Game = {
             for(var i = 0; i < Game.monsters.length; i++) {
                 var monster = Game.monsters[i];
 
-                // вынужены проверять клетку для совершения хода перед сортировкой
+                // вынуждены проверять клетку для совершения хода перед сортировкой
                 // потому что после неё подменяется текущий монстр.
                 var nextCell = Game.GetNextCellForMonster(monster);
 
@@ -137,6 +137,7 @@ var Game = {
                         Game.monsters[i] = Game.monsters[index];
                         Game.monsters[index] = monster;
                         monster = Game.monsters[i];
+                        nextCell = Game.GetNextCellForMonster(monster);
                     }
                 }
 
