@@ -111,11 +111,11 @@ var GameWindow = {
                     break;
             }
 
-            if(cell.MonsterPower > 0) {
-                switch(cell.MonsterPower) {
+            var monster = Game.GetMonsterInCell(cell);
+            if(monster) {
+                switch(monster.Power) {
                     case 2:
                         // рисуем монстра с силой 1.
-                        var monster = Game.GetMonsterInCell(cell);
                         drawImageInCell(cell, (monster.SkipTurns == 0) ? images.enemy : images.trappedEnemy);
                         break;
                     case 3:

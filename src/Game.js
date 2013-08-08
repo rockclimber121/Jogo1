@@ -113,31 +113,36 @@ var Game = {
             }
         };
 
-        var monstersForDelete = [];
-
         var stopFlag = true;
         while(stopFlag){
+            var monstersForDelete = [];
             // в начале цикла скидываем флаг
             stopFlag = false;
 
             for(var i = 0; i < Game.monsters.length; i++) {
                 var monster = Game.monsters[i];
 
-                // вынуждены проверять клетку для совершения хода перед сортировкой
-                // потому что после неё подменяется текущий монстр.
                 var nextCell = Game.GetNextCellForMonster(monster);
+                var index = i + 1;
 
-                if(nextCell.MonsterPower > 0) {
-                    // Сортируем массив монстров. Сортировка необходима для избежания конфликтов.
-                    // Так как монстры должны ходить синхронно, а мы вынуждены писать асинхронный алгоритм,
-                    // то для разрешения ситуации, когда монстр хочет встать в ячейку с другим монстром,
-                    // который ещё не успел сделать шаг, необходима сортировка.
-                    var index = getMonsterIndexByPosition(nextCell);
+                // Сортируем массив монстров. Сортировка необходима для избежания конфликтов.
+                // Так как монстры должны ходить синхронно, а мы вынуждены писать асинхронный алгоритм,
+                // то для разрешения ситуации, когда монстр хочет встать в ячейку с другим монстром,
+                // который ещё не успел сделать шаг, необходима сортировка.
+                // Так как монстры не могут идти в разные стороны, то циклов быть не может.
+                while(nextCell.MonsterPower > 0)
+                {
+                    index = getMonsterIndexByPosition(nextCell);
+
                     if(index >  i) {
                         Game.monsters[i] = Game.monsters[index];
                         Game.monsters[index] = monster;
                         monster = Game.monsters[i];
                         nextCell = Game.GetNextCellForMonster(monster);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
 
@@ -169,8 +174,8 @@ var Game = {
                         switch(monster.CurrentPosition.Value) {
                             case Levels.Hero:
                                 // Пользователь проиграл, когда монстр попал в клетку с героем.
+                                // Но необходимо дать монстрам доходить до конца.
                                 this.LoseEvent();
-                                return;
 
                             case Levels.Trap:
                             case Levels.Home:
@@ -181,7 +186,6 @@ var Game = {
                                 } else {
                                     // Делает шаг.
                                 }
-
                                 break;
                         }
                     }
@@ -193,16 +197,18 @@ var Game = {
                         stopFlag = true;
                 }
             }
-        }
 
-        // Удалим лишних демонов - это нужно, если они соеденились.
-        if(monstersForDelete.length > 0){
-            monstersForDelete.sort(function(a, b){
-                return b-a;
-            });
+            // Удалим лишних демонов - это нужно, если они соеденились.
+            if(monstersForDelete.length > 0){
+                monstersForDelete.sort(function(a, b){
+                    return b-a;
+                });
 
-            for(var i = 0; i < monstersForDelete.length; i ++){
-                Game.monsters.splice(monstersForDelete[i], 1);
+                for(var i = 0; i < monstersForDelete.length; i ++){
+                    // Проверяем, чтобы не было совпадений, а то удалятся нужные монстры.
+                    if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
+                        Game.monsters.splice(monstersForDelete[i], 1);
+                }
             }
         }
 
