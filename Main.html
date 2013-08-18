@@ -22,18 +22,18 @@
         var countLevels = 0;
         var html = "";
         var levels = Levels.GetAllLevels();
-        for(i = 0; i < levels.length; i++) {
+        for(var i = 0; i < levels.length; i++) {
             var levelCaption = 'Level' + i;
             Levels[levelCaption] = levels[i];
             var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField');";
-            html += '<a href="#" class="LevelLink" onclick="javascript:' + callMethod +'">' + levelCaption + '</a>';
+            html += '<a href="#" class="LevelLink" onclick="' + callMethod +'">' + levelCaption + '</a>';
         }
 
 		levelsBlock.html(html);
 
 
         $(document).ready(function(){
-            // Инициализируем уровень
+            // Инициализируем уровень.
             Game.Init("GameField");
         });
 

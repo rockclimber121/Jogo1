@@ -59,17 +59,17 @@ var GameWindow = {
         var cellOptions = this.cellOptions,
             images = this.images;
 
-        // рисуем фон
+        // Рисуем фон.
         context.drawImage(this.images.hell, 0, 0);
 
-        // Отрисовка изображения по центру ячейки
+        // Отрисовка изображения по центру ячейки.
         var drawImageInCell = function(cell, img) {
             var x = cell.X + (cell.Width - img.naturalWidth) / 2;
             var y = cell.Y + (cell.Height - img.naturalHeight) / 2;
             context.drawImage(img, x, y);
         };
 
-        // Отрисовка ячейки
+        // Отрисовка ячейки.
         var drawCell = function(cell) {
             context.beginPath();
 
@@ -150,7 +150,7 @@ var GameWindow = {
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
     Show : function(level, caption, canvasId){
-        // загружаем графические ресурсы
+        // Загружаем графические ресурсы.
         if (!this.images) {
             this.images = { loadQueue: Object.keys(GameWindow.imageResources).length };
 
@@ -162,19 +162,19 @@ var GameWindow = {
             }
         }
 
-        // ждем окончания загрузки графических ресурсов
+        // Ждем окончания загрузки графических ресурсов.
         if(this.images.loadQueue > 0) {
             setTimeout(function () { GameWindow.Show(level, caption, canvasId); }, 100);
             return;
         }
 
-        // очищаем поле
+        // Очищаем поле.
         var canvas = document.getElementById(canvasId);
         GameWindow.canvas = canvas;
         var context = canvas.getContext("2d");
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        // рисуем фон
+        // Рисуем фон.
         context.drawImage(this.images.hell, 0, 0);
 
         // ШАГ 1. Подготавливаем все к отрисовке клеток.
@@ -188,6 +188,7 @@ var GameWindow = {
         this.cells = [];
         Game.hero = undefined;
         Game.monsters = [];
+        Game.gameOver = false;
 
         for(var i = 0; i < countCellsInCol; i++){
             this.cells[i] = [];
@@ -228,11 +229,11 @@ var GameWindow = {
                         // Пустая ячейка. Ничего не указываем.
                 }
 
-                // если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали
+                // Если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали.
                 if(countCellsInRow%2 == 1)
                     newCell.X -= this.cellOptions.size/2;
 
-                // если ячеек в столбце нечетное количество, то сдвигаем на пол ячейки по вертикали
+                // Если ячеек в столбце нечетное количество, то сдвигаем на пол ячейки по вертикали.
                 if(countCellsInCol)
                     newCell.Y -= this.cellOptions.size/2;
 
@@ -242,7 +243,7 @@ var GameWindow = {
 
         this.cellOuterHome = undefined;
 
-        // если дом вне поля, то запоминаем это.
+        // Если дом вне поля, то запоминаем это.
         if(home[0] < 0 || home[1] < 0 || home[0] >= countCellsInCol || home[1] >= countCellsInRow){
             var x, y;
 
