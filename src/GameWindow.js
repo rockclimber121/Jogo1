@@ -2,6 +2,9 @@
  * Окно игры. Отдельный фрейм с игровым полем. Содержит методы по работе с ним.
  */
 var GameWindow = {
+    /**
+     * Контрол для отрисовки игрового поля.
+     */
     canvas : undefined,
 
     /**
@@ -18,31 +21,31 @@ var GameWindow = {
      * Настройки отображения ячеек.
      */
     cellOptions : {
-        fillColor: 'transparent', // Фон
-        strokeWidth: 1, // Ширина границы
-        strokeColor: 'white' // Цвет границы
+        fillColor: 'transparent', // Фон.
+        strokeWidth: 1, // Ширина границы.
+        strokeColor: 'white' // Цвет границы.
     },
 
     /**
      * Настройки отображения стен между ячейками (стенкой считается непреодолимое препятсвие).
      */
     wallOptions : {
-        width: 6, // Толщина стенки
-        color: 'black', // Цвет стенки
-        lineCap: 'round' // Тип наконечника линии (context.lineCap: butt, round, square)
+        width: 6, // Толщина стенки.
+        color: 'black', // Цвет стенки.
+        lineCap: 'round' // Тип наконечника линии (context.lineCap: butt, round, square).
     },
 
     /**
-     * Графические ресурсы игрового поля
+     * Графические ресурсы игрового поля.
      */
     imageResources : {
-        enemy: "images/enemy.png", // вражеский персонаж с силой 1
-        trappedEnemy: "images/trappedEnemy.png", // вражеский персонаж с силой 1, застрявший в ловушке
-        enemy2: "images/enemy2.png", // вражеский персонаж с силой 2
-        hero: "images/hero.png", // герой
-        house: "images/house.png", // дом - цель героя
-        snag: "images/snag.png", // ловушка, на которой вражеский персонаж теряет игровые ходы
-        hell: "images/hell.png" // фон игрового поля
+        enemy: "images/enemy.png", // Вражеский персонаж с силой 1.
+        trappedEnemy: "images/trappedEnemy.png", // Вражеский персонаж с силой 1, застрявший в ловушке.
+        enemy2: "images/enemy2.png", // Вражеский персонаж с силой 2.
+        hero: "images/hero.png", // Герой.
+        house: "images/house.png", // Дом - цель героя.
+        snag: "images/snag.png", // Ловушка, на которой вражеский персонаж теряет игровые ходы.
+        hell: "images/hell.png" // Фон игрового поля.
     },
 
     /**
@@ -53,7 +56,7 @@ var GameWindow = {
     /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
      */
-    Redraw : function(){
+    Redraw : function() {
         var context = GameWindow.canvas.getContext("2d");
         var cellOptions = this.cellOptions,
             images = this.images;
@@ -80,17 +83,15 @@ var GameWindow = {
             context.strokeStyle = cellOptions.strokeColor;
             context.stroke();
 
-            if(cell.Place instanceof Trap){
+            if(cell.Place instanceof Trap)
                 drawImageInCell(cell, images.snag);
-            }
-            else if(cell.Place instanceof Home){
+            else if(cell.Place instanceof Home)
                 drawImageInCell(cell, images.house);
-            }
 
-            if(cell.Unit instanceof Hero){
+            if(cell.Unit instanceof Hero) {
                 drawImageInCell(cell, images.hero);
             }
-            else if(cell.Unit instanceof Monster){
+            else if(cell.Unit instanceof Monster) {
                 switch(cell.Unit.Power) {
                     case 2:
                         // рисуем монстра с силой 1.
@@ -104,8 +105,8 @@ var GameWindow = {
             }
         };
 
-        for(var i = 0; i < this.CurrentLevel.Cells.length; i++){
-            for(var j = 0; j < this.CurrentLevel.Cells[i].length; j++){
+        for(var i = 0; i < this.CurrentLevel.Cells.length; i++) {
+            for(var j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
                 drawCell(this.CurrentLevel.Cells[i][j]);
             }
         }
@@ -118,8 +119,9 @@ var GameWindow = {
         context.strokeStyle = this.wallOptions.color;
         context.lineWidth = this.wallOptions.width;
         context.lineCap = this.wallOptions.lineCap;
+
         for(i = 0; i < this.CurrentLevel.Cells.length; i++)
-            for(j = 0; j < this.CurrentLevel.Cells[i].length; j++){
+            for(j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
                 var cell = this.CurrentLevel.Cells[i][j];
 
                 if(cell.RightWall) {
@@ -142,7 +144,7 @@ var GameWindow = {
      * Отобразить окно с игровым полем.
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
-    Init : function(canvasId){
+    Init : function(canvasId) {
         this.Levels = Levels.GetAllLevels();
 
         // Загружаем графические ресурсы.
@@ -151,7 +153,11 @@ var GameWindow = {
 
             for (var imgKey in this.imageResources) {
                 var img = new Image();
-                img.onload = function() { GameWindow.images.loadQueue--; };
+
+                img.onload = function() {
+                    GameWindow.images.loadQueue--;
+                };
+
                 img.src = this.imageResources[imgKey];
                 this.images[imgKey] = img;
             }
@@ -168,18 +174,24 @@ var GameWindow = {
         Game.Init(canvasId);
 
         Game.LoseEvent = function() {
-            GameWindow.ResetLevel(GameWindow.CurrentLevel.Number);
+            GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
         };
 
         Game.WinEvent = function() {
             var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
             if(numberNextLevel < GameWindow.Levels.length)
-                GameWindow.ResetLevel(numberNextLevel);
+                GameWindow.LoadLevel(numberNextLevel);
             else
                 alert('The End');
         };
     },
 
+    /**
+     * Зарегистрировать обработчики для группы контролов отвечающих за выбор уровня.
+     * @param {string} labelId идентификатор контрола для заголовка.
+     * @param {string} controlId идентификатор контрола для ввода номера уровня.
+     * @param {string} buttonId идентификатор кнопки для перехода на новый уровень.
+     */
     RegisterLevelChoosingControl : function(labelId, controlId, buttonId) {
         $("#" + labelId).text("Level number of " + this.Levels.length);
 
@@ -190,11 +202,15 @@ var GameWindow = {
             var value = levelChoosingControl.val() - 0;
 
             if(value > 0 && value <= GameWindow.Levels.length)
-                GameWindow.ResetLevel(value - 1);
+                GameWindow.LoadLevel(value - 1);
         };
     },
 
-    ResetLevel : function(levelNumber){
+    /**
+     * Загрузить новый уровень.
+     * @param {number} levelNumber номер уровня, который необходимо загрузить.
+     */
+    LoadLevel : function(levelNumber) {
         // Очищаем поле.
         var context = this.canvas.getContext("2d");
         context.clearRect(0, 0, this.canvas.width, this.canvas.height);

@@ -2,10 +2,12 @@
  * Основной объект реализующий логику игры.
  */
 var Game = {
-
+    /**
+     * Настройки задержки времени до выполнения каких-либо операций в игре.
+     */
     timeOutOptions : {
-        HeroStepTimeOut : 200,
-        MonsterStepTimeOut : 200
+        HeroStepTimeOut : 200,    // Задержка пока герой сделает ход, необходима для анимации.
+        MonsterStepTimeOut : 200  // Задержка пока монстр сделает ход, необходима для анимации.
     },
 
     /**
@@ -42,16 +44,17 @@ var Game = {
      * Инициализирует игру. Создание подписчиков на события.
      * @param canvasId Идентификатор полотна для отрисовки уровня.
      */
-    Init : function(canvasId){
+    Init : function(canvasId) {
         // Подписываемся на событие клика по полотну, чтобы определять куда хочет сходить пользователь.
         var canvas = document.getElementById(canvasId);
-        var rect = canvas.getBoundingClientRect();
+
         canvas.addEventListener('click', function(event) {
             if(Game.gameOver || Game.animating)
                 return;
 
             Game.animating = true;
 
+            var rect = canvas.getBoundingClientRect();
             var cell = GameWindow.CurrentLevel.GetCellByCoordinates(event.pageX - rect.left, event.pageY - rect.top);
 
             if(cell)
@@ -66,12 +69,11 @@ var Game = {
      * Проверяет можно ли сделать шаг в указанную клетку и совершает его.
      * @param {object} cell Ячейка в которую хочет сходить пользователь.
      */
-    TryDoStep : function(cell){
+    TryDoStep : function(cell) {
         var currentCell = Game.hero.CurrentPosition;
 
         // Если кликнули в ту же ячейку, то не ходим.
-        if(currentCell === cell)
-        {
+        if(currentCell === cell) {
             this.EndTurn();
             return;
         }
@@ -82,17 +84,17 @@ var Game = {
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == 1 && !currentCell.RightWall ||
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == -1 && !currentCell.LeftWall) {
 
-           if(cell.Place instanceof Trap || cell.Unit instanceof Monster){
-                Game.Lose();
+           if(cell.Place instanceof Trap || cell.Unit instanceof Monster) {
+                this.Lose();
            }
-           else if(cell.Place instanceof Home){
-               Game.Win();
+           else if(cell.Place instanceof Home) {
+               this.Win();
            }
            else {
                // Для шага переназначаем значения ячеек.
-               cell.Unit = Game.hero;
+               cell.Unit = this.hero;
                currentCell.Unit = undefined;
-               Game.hero.CurrentPosition = cell;
+               this.hero.CurrentPosition = cell;
 
                // Перерисовываем поле, чтобы увидеть как сходит герой.
                GameWindow.Redraw();
@@ -100,7 +102,7 @@ var Game = {
                // Передвигаем монстров.
                setTimeout(function(){
                    Game.MoveMonsters();
-               }, Game.timeOutOptions.HeroStepTimeOut);
+               }, this.timeOutOptions.HeroStepTimeOut);
            }
         }
         else {
@@ -108,8 +110,11 @@ var Game = {
         }
     },
 
-    MoveMonsters : function(){
-       setTimeout(function() { Game.DoOneStepForMonsters(); }, Game.timeOutOptions.MonsterStepTimeOut);
+    MoveMonsters : function() {
+
+       setTimeout(function() {
+           Game.DoOneStepForMonsters();
+       }, this.timeOutOptions.MonsterStepTimeOut);
 
        // После того как все отходили, проставляем их ходы обратно.
        // Для попавших в ловушку уменьшаем время простоя.
@@ -124,7 +129,8 @@ var Game = {
      * Монстры совершают по одному шагу, если могут.
      */
     DoOneStepForMonsters : function(){
-        var getMonsterIndexByPosition = function(positionCell){
+        // Получить индекс монстра в массиве, который стоит на указаной позиции.
+        var getMonsterIndexByPosition = function(positionCell) {
             for(var i = 0; i < Game.monsters.length; i++) {
                 if(Game.monsters[i].CurrentPosition == positionCell)
                     return i;
@@ -135,8 +141,10 @@ var Game = {
 
         // Флаг означающий, что все монстры отходили и герой может сделать следующий ход.
         var turnComplete = true;
+
         // Флаг означающий, что монстры сделали хотя бы один шаг и необходимо перерисовать поле.
         var needRefresh = false;
+
         // Массив монстров для удаления. Необходим при соединении монстров.
         var monstersForDelete = [];
 
@@ -152,8 +160,7 @@ var Game = {
             // то для разрешения ситуации, когда монстр хочет встать в ячейку с другим монстром,
             // который ещё не успел сделать шаг, необходима сортировка.
             // Так как монстры не могут идти в разные стороны, то циклов быть не может.
-            while(nextCell.Unit instanceof Monster)
-            {
+            while(nextCell.Unit instanceof Monster) {
                 index = getMonsterIndexByPosition(nextCell);
 
                 if(index >  i) {
@@ -162,8 +169,7 @@ var Game = {
                     monster = this.monsters[i];
                     nextCell = this.GetNextCellForMonster(monster);
                 }
-                else
-                {
+                else {
                     break;
                 }
             }
@@ -181,6 +187,7 @@ var Game = {
                 if (nextCell.Unit instanceof Monster) {
                     nextCell.MonsterPower = 3;
                     monster.SetPower(3);
+
                     var anotherMonster = this.monsters[getMonsterIndexByPosition(nextCell)];
                     anotherMonster.SetPower(3);
 
@@ -191,7 +198,7 @@ var Game = {
                         // Но необходимо дать монстрам доходить до конца.
                         this.Lose();
                     }
-                    else if(nextCell.Place instanceof Trap && monster.SkipTurnsEnabled){
+                    else if(nextCell.Place instanceof Trap && monster.SkipTurnsEnabled) {
                         // Монстр пропускает 3 хода + текущий.
                         monster.SkipTurns = 4;
                     }
@@ -224,7 +231,9 @@ var Game = {
             GameWindow.Redraw();
 
         if(!turnComplete)
-            setTimeout(function() { Game.DoOneStepForMonsters(); }, this.timeOutOptions.MonsterStepTimeOut);
+            setTimeout(function() {
+                Game.DoOneStepForMonsters();
+            }, this.timeOutOptions.MonsterStepTimeOut);
         else
             this.EndTurn();
     },
@@ -269,7 +278,7 @@ var Game = {
         };
 
         // Если они стоят в одном столбце, то монстр попытается пройти по вертикали.
-        if (Game.hero.CurrentPosition.Col == monster.CurrentPosition.Col){
+        if (Game.hero.CurrentPosition.Col == monster.CurrentPosition.Col) {
             return changeRow();
         }
 
@@ -280,7 +289,7 @@ var Game = {
             return newCell;
 
         // Если по горизонтали стенка, то он постарается сходить по вертикали, если он не стоит в одной с ним строке.
-        if (Game.hero.CurrentPosition.Row != monster.CurrentPosition.Row){
+        if (Game.hero.CurrentPosition.Row != monster.CurrentPosition.Row) {
             return changeRow();
         }
 
@@ -290,7 +299,7 @@ var Game = {
     /**
      * Все необходимые действия по окончанию хода.
      */
-    EndTurn : function(){
+    EndTurn : function() {
         this.animating = false;
     },
 
@@ -298,16 +307,18 @@ var Game = {
         this.gameOver = true;
         this.EndTurn();
         alert("Complete");
-        if(this.WinEvent){
+
+        if(this.WinEvent) {
             this.WinEvent();
         }
     },
 
-    Lose : function(){
+    Lose : function() {
         this.gameOver = true;
         this.EndTurn();
         alert("Fail");
-        if(this.LoseEvent){
+
+        if(this.LoseEvent) {
             this.LoseEvent();
         }
     }
