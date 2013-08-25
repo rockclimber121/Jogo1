@@ -8,7 +8,11 @@
     <link rel="stylesheet" type="text/css" href="styles/Main.css">
 </head>
 <body>
-    <div id="LevelsBlock" class="LevelsBlock"></div>
+    <div id="LevelsBlock" class="LevelsBlock">
+        <span id="LevelChoosingLabel"></span>
+        <input id="LevelChoosingControl" class="LineControl">
+        <input id="LevelChoosingButton" class="LineControl" type="button" value="GO" title="Go to level by number"/>
+    </div>
 
     <div id="GameBlock" class="GameBlock">
         <!-- Размеры canvas должны указываться именно через атрибуты, а не через стили.
@@ -18,25 +22,11 @@
     </div>
 
 	<script LANGUAGE="javascript">
-        // Формируем ссылки на уровни.
-
-		var levelsBlock = $("#LevelsBlock");
-
-        var html = "";
-        GameWindow.Levels = Levels.GetAllLevels();
-
-        for(var i = 0; i < GameWindow.Levels.length; i++) {
-            var levelCaption = 'Level' + i;
-            var callMethod = "GameWindow.ResetLevel(" + i + ");";
-            html += '<a href="#" class="LevelLink" onclick="' + callMethod +'">' + levelCaption + '</a>';
-        }
-
-		levelsBlock.html(html);
-
         $(document).ready(function(){
             // Инициализируем уровень.
             GameWindow.Init('GameField');
+            GameWindow.RegisterLevelChoosingControl("LevelChoosingLabel",
+                    "LevelChoosingControl", "LevelChoosingButton");
         });
-
 	</script>
 </body>

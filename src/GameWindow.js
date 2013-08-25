@@ -143,6 +143,8 @@ var GameWindow = {
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
     Init : function(canvasId){
+        this.Levels = Levels.GetAllLevels();
+
         // Загружаем графические ресурсы.
         if (!this.images) {
             this.images = { loadQueue: Object.keys(GameWindow.imageResources).length };
@@ -175,6 +177,20 @@ var GameWindow = {
                 GameWindow.ResetLevel(numberNextLevel);
             else
                 alert('The End');
+        };
+    },
+
+    RegisterLevelChoosingControl : function(labelId, controlId, buttonId) {
+        $("#" + labelId).text("Level number of " + this.Levels.length);
+
+        var levelChoosingControl = $("#" + controlId);
+        var button = $("#" + buttonId)[0];
+
+        button.onclick = function() {
+            var value = levelChoosingControl.val() - 0;
+
+            if(value > 0 && value <= GameWindow.Levels.length)
+                GameWindow.ResetLevel(value - 1);
         };
     },
 
