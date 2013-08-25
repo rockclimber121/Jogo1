@@ -9,6 +9,16 @@ var Game = {
     },
 
     /**
+     * Делегат. Срабатывает, когда пользователь выйграл.
+     */
+    WinEvent : undefined,
+
+    /**
+     * Делегат. Срабатывает, когда пользователь проиграл.
+     */
+    LoseEvent : undefined,
+
+    /**
      * Флаг обозначающий, что игра окончена.
      */
     gameOver : false,
@@ -42,7 +52,7 @@ var Game = {
 
             Game.animating = true;
 
-            var cell = GameWindow.GetCellByCoordinates(event.pageX - rect.left, event.pageY - rect.top);
+            var cell = GameWindow.CurrentLevel.GetCellByCoordinates(event.pageX - rect.left, event.pageY - rect.top);
 
             if(cell)
                 Game.TryDoStep(cell);
@@ -72,11 +82,11 @@ var Game = {
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == 1 && !currentCell.RightWall ||
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == -1 && !currentCell.LeftWall) {
 
-           if(cell.Place && cell.Place instanceof Trap || cell.Unit && cell.Unit instanceof Monster){
-                Game.LoseEvent();
+           if(cell.Place instanceof Trap || cell.Unit instanceof Monster){
+                Game.Lose();
            }
-           else if(cell.Place && cell.Place instanceof Home){
-               Game.WinEvent();
+           else if(cell.Place instanceof Home){
+               Game.Win();
            }
            else {
                // Для шага переназначаем значения ячеек.
@@ -85,7 +95,7 @@ var Game = {
                Game.hero.CurrentPosition = cell;
 
                // Перерисовываем поле, чтобы увидеть как сходит герой.
-               GameWindow.Refresh();
+               GameWindow.Redraw();
 
                // Передвигаем монстров.
                setTimeout(function(){
@@ -108,8 +118,6 @@ var Game = {
            if(this.SkipTurns > 0)
                this.SkipTurns--;
        });
-
-        this.EndTurn();
     },
 
     /**
@@ -144,7 +152,7 @@ var Game = {
             // то для разрешения ситуации, когда монстр хочет встать в ячейку с другим монстром,
             // который ещё не успел сделать шаг, необходима сортировка.
             // Так как монстры не могут идти в разные стороны, то циклов быть не может.
-            while(nextCell.Unit && nextCell.Unit instanceof Monster)
+            while(nextCell.Unit instanceof Monster)
             {
                 index = getMonsterIndexByPosition(nextCell);
 
@@ -162,8 +170,7 @@ var Game = {
 
             if(monster.Steps > 0 && monster.SkipTurns == 0 &&
                 // Если монстр уже стоит на ловушке и пытается в неё же сходить, то он останется на месте.
-                (nextCell !== monster.CurrentPosition || !monster.CurrentPosition.Place ||
-                    ! monster.CurrentPosition.Place instanceof Trap)) {
+                (nextCell !== monster.CurrentPosition || ! monster.CurrentPosition.Place instanceof Trap)) {
 
                 // Передвигаем монстра в новую ячейку.
                 monster.CurrentPosition.Unit = undefined;
@@ -171,7 +178,7 @@ var Game = {
                 needRefresh = true;
 
                 // Если в новой ячейке уже стоял монстр, то объединяем их.
-                if (nextCell.Unit && nextCell.Unit instanceof Monster) {
+                if (nextCell.Unit instanceof Monster) {
                     nextCell.MonsterPower = 3;
                     monster.SetPower(3);
                     var anotherMonster = this.monsters[getMonsterIndexByPosition(nextCell)];
@@ -179,12 +186,12 @@ var Game = {
 
                     monstersForDelete.push(i);
                 } else {
-                    if(nextCell.Unit && nextCell.Unit instanceof Hero){
+                    if(nextCell.Unit instanceof Hero){
                         // Пользователь проиграл, когда монстр попал в клетку с героем.
                         // Но необходимо дать монстрам доходить до конца.
-                        this.LoseEvent();
+                        this.Lose();
                     }
-                    else if(nextCell.Place && nextCell.Place instanceof Trap && monster.SkipTurnsEnabled){
+                    else if(nextCell.Place instanceof Trap && monster.SkipTurnsEnabled){
                         // Монстр пропускает 3 хода + текущий.
                         monster.SkipTurns = 4;
                     }
@@ -214,10 +221,12 @@ var Game = {
         }
 
         if(needRefresh)
-            GameWindow.Refresh();
+            GameWindow.Redraw();
 
         if(!turnComplete)
-            setTimeout(function() { Game.DoOneStepForMonsters(); }, Game.timeOutOptions.MonsterStepTimeOut);
+            setTimeout(function() { Game.DoOneStepForMonsters(); }, this.timeOutOptions.MonsterStepTimeOut);
+        else
+            this.EndTurn();
     },
 
     /**
@@ -229,16 +238,16 @@ var Game = {
             // Если герой ниже монстра, то монстр попытается спуститься.
             if (Game.hero.CurrentPosition.Row > monster.CurrentPosition.Row) {
                 // Если на пути у него стенка, то он останется на месте.
-                if (GameWindow.cells[monster.CurrentPosition.Row + 1][monster.CurrentPosition.Col].TopWall)
+                if (GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row + 1][monster.CurrentPosition.Col].TopWall)
                     return monster.CurrentPosition;
 
-                return GameWindow.cells[monster.CurrentPosition.Row + 1][monster.CurrentPosition.Col];
+                return GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row + 1][monster.CurrentPosition.Col];
             } else {
                 // Если на пути у него стенка, то он останется на месте.
-                if (GameWindow.cells[monster.CurrentPosition.Row - 1][monster.CurrentPosition.Col].BottomWall)
+                if (GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row - 1][monster.CurrentPosition.Col].BottomWall)
                     return monster.CurrentPosition;
 
-                return GameWindow.cells[monster.CurrentPosition.Row - 1][monster.CurrentPosition.Col];
+                return GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row - 1][monster.CurrentPosition.Col];
             }
         };
 
@@ -246,16 +255,16 @@ var Game = {
             // Если герой правее монстра, то монстр попытается пройти в право.
             if(Game.hero.CurrentPosition.Col > monster.CurrentPosition.Col) {
                 // Если на пути у него стенка, то он останется на месте.
-                if(GameWindow.cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col + 1].LeftWall)
+                if(GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col + 1].LeftWall)
                     return monster.CurrentPosition;
 
-                return GameWindow.cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col + 1];
+                return GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col + 1];
             } else {
                 // Если на пути у него стенка, то он останется на месте.
-                if(GameWindow.cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col - 1].RightWall)
+                if(GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col - 1].RightWall)
                     return monster.CurrentPosition;
 
-                return GameWindow.cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col - 1];
+                return GameWindow.CurrentLevel.Cells[monster.CurrentPosition.Row][monster.CurrentPosition.Col - 1];
             }
         };
 
@@ -285,15 +294,21 @@ var Game = {
         this.animating = false;
     },
 
-    WinEvent : function() {
+    Win : function() {
         this.gameOver = true;
         this.EndTurn();
         alert("Complete");
+        if(this.WinEvent){
+            this.WinEvent();
+        }
     },
 
-    LoseEvent : function(){
+    Lose : function(){
         this.gameOver = true;
         this.EndTurn();
         alert("Fail");
+        if(this.LoseEvent){
+            this.LoseEvent();
+        }
     }
 };

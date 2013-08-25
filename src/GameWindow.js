@@ -5,17 +5,26 @@ var GameWindow = {
     canvas : undefined,
 
     /**
-     * Настройки отображения ячеек
+     * Все уровни игры в первоначальном формате.
+     */
+    Levels : [],
+
+    /**
+     * Текущий уровень. Его реальная объектная модель.
+     */
+    CurrentLevel : undefined,
+
+    /**
+     * Настройки отображения ячеек.
      */
     cellOptions : {
-        size : 50,
         fillColor: 'transparent', // Фон
         strokeWidth: 1, // Ширина границы
         strokeColor: 'white' // Цвет границы
     },
 
     /**
-     * Настройки отображения стен между ячейками (стенкой считается непреодолимое препятсвие)
+     * Настройки отображения стен между ячейками (стенкой считается непреодолимое препятсвие).
      */
     wallOptions : {
         width: 6, // Толщина стенки
@@ -37,24 +46,14 @@ var GameWindow = {
     },
 
     /**
-     * Матрица ячеек.
-     */
-    cells : undefined,
-
-    /**
      * Графика для игрового поля
      */
     images : undefined,
 
     /**
-     * Ячейка с домом.
-     */
-    cellOuterHome : undefined,
-
-    /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
      */
-    Refresh : function(){
+    Redraw : function(){
         var context = GameWindow.canvas.getContext("2d");
         var cellOptions = this.cellOptions,
             images = this.images;
@@ -81,51 +80,47 @@ var GameWindow = {
             context.strokeStyle = cellOptions.strokeColor;
             context.stroke();
 
-            if(cell.Place){
-                if(cell.Place instanceof Trap){
-                    drawImageInCell(cell, images.snag);
-                }
-                else if(cell.Place instanceof Home){
-                    drawImageInCell(cell, images.house);
-                }
+            if(cell.Place instanceof Trap){
+                drawImageInCell(cell, images.snag);
+            }
+            else if(cell.Place instanceof Home){
+                drawImageInCell(cell, images.house);
             }
 
-            if(cell.Unit){
-                if(cell.Unit instanceof Hero){
-                    drawImageInCell(cell, images.hero);
-                }
-                else if(cell.Unit instanceof Monster){
-                    switch(cell.Unit.Power) {
-                        case 2:
-                            // рисуем монстра с силой 1.
-                            drawImageInCell(cell, (cell.Unit.SkipTurns == 0) ? images.enemy : images.trappedEnemy);
-                            break;
-                        case 3:
-                            // рисуем монстра с силой 2.
-                            drawImageInCell(cell, images.enemy2);
-                            break;
-                    }
+            if(cell.Unit instanceof Hero){
+                drawImageInCell(cell, images.hero);
+            }
+            else if(cell.Unit instanceof Monster){
+                switch(cell.Unit.Power) {
+                    case 2:
+                        // рисуем монстра с силой 1.
+                        drawImageInCell(cell, (cell.Unit.SkipTurns == 0) ? images.enemy : images.trappedEnemy);
+                        break;
+                    case 3:
+                        // рисуем монстра с силой 2.
+                        drawImageInCell(cell, images.enemy2);
+                        break;
                 }
             }
         };
 
-        for(var i = 0; i < this.cells.length; i++){
-            for(var j = 0; j < this.cells[i].length; j++){
-                drawCell(this.cells[i][j]);
+        for(var i = 0; i < this.CurrentLevel.Cells.length; i++){
+            for(var j = 0; j < this.CurrentLevel.Cells[i].length; j++){
+                drawCell(this.CurrentLevel.Cells[i][j]);
             }
         }
 
         // Если есть дом вне поля, рисуем его.
-        if(this.cellOuterHome)
-            drawCell(this.cellOuterHome);
+        if(this.CurrentLevel.CellOuterHome)
+            drawCell(this.CurrentLevel.CellOuterHome);
 
         // Рисуем стенки после всего, чтобы они были поверх.
         context.strokeStyle = this.wallOptions.color;
         context.lineWidth = this.wallOptions.width;
         context.lineCap = this.wallOptions.lineCap;
-        for(i = 0; i < this.cells.length; i++)
-            for(j = 0; j < this.cells[i].length; j++){
-                var cell = this.cells[i][j];
+        for(i = 0; i < this.CurrentLevel.Cells.length; i++)
+            for(j = 0; j < this.CurrentLevel.Cells[i].length; j++){
+                var cell = this.CurrentLevel.Cells[i][j];
 
                 if(cell.RightWall) {
                     context.beginPath();
@@ -145,11 +140,9 @@ var GameWindow = {
 
     /**
      * Отобразить окно с игровым полем.
-     * @param {object} level уровень. Структура описана в Levels.js
-     * @param {string} caption заголовок формы
      * @param {string} canvasId идентификатор полотна для отрисовки окна
      */
-    Show : function(level, caption, canvasId){
+    Init : function(canvasId){
         // Загружаем графические ресурсы.
         if (!this.images) {
             this.images = { loadQueue: Object.keys(GameWindow.imageResources).length };
@@ -164,162 +157,45 @@ var GameWindow = {
 
         // Ждем окончания загрузки графических ресурсов.
         if(this.images.loadQueue > 0) {
-            setTimeout(function () { GameWindow.Show(level, caption, canvasId); }, 100);
+            setTimeout(function () { GameWindow.Init(canvasId); }, 100);
             return;
         }
 
+        this.canvas = document.getElementById(canvasId);
+
+        Game.Init(canvasId);
+
+        Game.LoseEvent = function() {
+            GameWindow.ResetLevel(GameWindow.CurrentLevel.Number);
+        };
+
+        Game.WinEvent = function() {
+            var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
+            if(numberNextLevel < GameWindow.Levels.length)
+                GameWindow.ResetLevel(numberNextLevel);
+            else
+                alert('The End');
+        };
+    },
+
+    ResetLevel : function(levelNumber){
         // Очищаем поле.
-        var canvas = document.getElementById(canvasId);
-        GameWindow.canvas = canvas;
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        var context = this.canvas.getContext("2d");
+        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Рисуем фон.
         context.drawImage(this.images.hell, 0, 0);
 
-        // ШАГ 1. Подготавливаем все к отрисовке клеток.
-
-        var home = level["home"];
-        var field = level["field"];
-
-        var center = { X: canvas.width/2, Y: canvas.height/2 };
-        var countCellsInCol = (field.length + 1)/2;
-        var countCellsInRow = (field[0].length + 1)/2;
-        this.cells = [];
+        // Зачищаем объекты в игре.
         Game.hero = undefined;
         Game.monsters = [];
         Game.gameOver = false;
 
-        for(var i = 0; i < countCellsInCol; i++){
-            this.cells[i] = [];
-            for(var j = 0; j < countCellsInRow; j++){
-                var value = field[i*2][j*2];
+        // Пересоздаем уровень игры.
+        this.CurrentLevel = new Level(this.Levels[levelNumber],
+            levelNumber, { width : this.canvas.width, height : this.canvas.height });
 
-                var newCell = new Cell(center.X + (j - (countCellsInRow/2|0)) * this.cellOptions.size,
-                                       center.Y + (i - (countCellsInCol/2|0)) * this.cellOptions.size,
-                                       i, j);
-
-                // Указываем что находится в ячейке.
-                switch (value){
-                    case Levels.Trap:
-                        newCell.Place = new Trap(newCell);
-                        break;
-                    case Levels.Home:
-                        newCell.Place = new Home(newCell);
-                        break;
-                    case Levels.Hero:
-                        newCell.Unit = new Hero(newCell);
-                        Game.hero = newCell.Unit;
-                        break;
-                    case Levels.Monster:
-                        newCell.Unit = new Monster(newCell);
-                        Game.monsters.push(newCell.Unit);
-                        break;
-                    case Levels.MonsterOnTrap:
-                        newCell.Unit = new Monster(newCell);
-                        newCell.Place = new Trap(newCell);
-                        Game.monsters.push(newCell.Unit);
-                        break;
-                    case Levels.MonsterOnHome:
-                        newCell.Unit = new Monster(newCell);
-                        newCell.Place = new Home(newCell);
-                        Game.monsters.push(newCell.Unit);
-                        break;
-                    default:
-                        // Пустая ячейка. Ничего не указываем.
-                }
-
-                // Если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали.
-                if(countCellsInRow%2 == 1)
-                    newCell.X -= this.cellOptions.size/2;
-
-                // Если ячеек в столбце нечетное количество, то сдвигаем на пол ячейки по вертикали.
-                if(countCellsInCol)
-                    newCell.Y -= this.cellOptions.size/2;
-
-                this.cells[i][j] = newCell;
-            }
-        }
-
-        this.cellOuterHome = undefined;
-
-        // Если дом вне поля, то запоминаем это.
-        if(home[0] < 0 || home[1] < 0 || home[0] >= countCellsInCol || home[1] >= countCellsInRow){
-            var x, y;
-
-            if(home[1] < 0){
-                x = this.cells[0][0].X - this.cellOptions.size;
-            } else if(home[1] >= countCellsInRow) {
-                x = this.cells[0][0].X + countCellsInRow * this.cellOptions.size;
-            } else {
-                x = this.cells[0][0].X + home[1] * this.cellOptions.size;
-            }
-
-            if(home[0] < 0){
-                y = this.cells[0][0].Y - this.cellOptions.size;
-            } else if(home[0] >= countCellsInCol) {
-                y = this.cells[0][0].Y + countCellsInCol * this.cellOptions.size;
-            } else {
-                y = this.cells[0][0].Y + home[0] * this.cellOptions.size;
-            }
-
-            this.cellOuterHome = new Cell(x, y, home[0], home[1]);
-            this.cellOuterHome.Place = new Home(this.cellOuterHome);
-        }
-
-        // Шаг 2. Подготавливаем стенки для отрисовки.
-
-        for(i = 0; i < field.length; i++){
-            for(j = 0; j < field[i].length; j++){
-                // Если это нечетная строчка, то стенки на четных позициях.
-                // Если четная строчка, то стенки на нечетных позициях.
-                // Проверка при делении по модулю 2 перевернута из-за того что индексы идут с 0.
-
-                if(i%2 == 0 && j%2 == 1 && field[i][j] == 1){
-                    this.cells[i/2][j/2 - 1/2].RightWall = true;
-
-                    if(j != field[i].length - 1)
-                        this.cells[i/2][j/2 + 1/2].LeftWall = true;
-                }
-                else if(i%2 == 1 && j%2 == 0 && field[i][j] == 1){
-                    this.cells[i/2 - 1/2][j/2].BottomWall = true;
-
-                    if(i != field.length - 1)
-                        this.cells[i/2 + 1/2][j/2].TopWall = true;
-                }
-            }
-        }
-
-        // Шаг 3. Рисуем все.
-
-        GameWindow.Refresh();
-    },
-
-    /**
-     * Возвращает объект ячейки из матрицы находящуюся по указанным координатам.
-     * @param x {int} Координата по оси X.
-     * @param y {int} Координата по оси Y.
-     * @returns {object|undefined} Ячейка из матрицы находящуюся по указанным координатам.
-     * Если ячейка не будет найдена вернет undefined.
-     */
-    GetCellByCoordinates : function(x, y){
-        // Сначала проверим не попали ли мы в дом, которыц вне матрицы.
-        if(this.cellOuterHome){
-            var deltaX = x - this.cellOuterHome.X;
-            var deltaY = y - this.cellOuterHome.Y;
-
-            if(deltaX > 0 && deltaX <= this.cellOptions.size && deltaY > 0 && deltaY <= this.cellOptions.size)
-                return this.cellOuterHome;
-        }
-
-        // Определяем самый левый верхний угол матрицы.
-        var startX = this.cells[0][0].X;
-        var startY = this.cells[0][0].Y;
-
-        var i = ((y - startY)/this.cellOptions.size)|0;
-        var j = ((x - startX)/this.cellOptions.size)|0;
-
-        if(i < this.cells.length && j < this.cells[i].length)
-            return this.cells[i][j];
+        // Рисуем матрицу.
+        GameWindow.Redraw();
     }
 };

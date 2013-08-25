@@ -2,41 +2,41 @@
 	<script type="text/javascript" src="lib/jquery2.02.js"></script>
 	<script type="text/javascript" src="src/Levels.js"></script>
     <script type="text/javascript" src="src/Classes.js"></script>
+    <script type="text/javascript" src="src/Level.js"></script>
     <script type="text/javascript" src="src/GameWindow.js"></script>
     <script type="text/javascript" src="src/Game.js"></script>
     <link rel="stylesheet" type="text/css" href="styles/Main.css">
 </head>
 <body>
     <div id="LevelsBlock" class="LevelsBlock"></div>
+
     <div id="GameBlock" class="GameBlock">
         <!-- Размеры canvas должны указываться именно через атрибуты, а не через стили.
         Иначе все изображение будет масштабироваться относительно стандартных размеров 300 на 150.-->
         <canvas id="GameField" class="Canvas" width="800" height="600">
         </canvas>
     </div>
+
 	<script LANGUAGE="javascript">
         // Формируем ссылки на уровни.
 
 		var levelsBlock = $("#LevelsBlock");
 
-        var countLevels = 0;
         var html = "";
-        var levels = Levels.GetAllLevels();
-        for(var i = 0; i < levels.length; i++) {
+        GameWindow.Levels = Levels.GetAllLevels();
+
+        for(var i = 0; i < GameWindow.Levels.length; i++) {
             var levelCaption = 'Level' + i;
-            Levels[levelCaption] = levels[i];
-            var callMethod = "GameWindow.Show(Levels['" + levelCaption + "'], '" + levelCaption + "', 'GameField');";
+            var callMethod = "GameWindow.ResetLevel(" + i + ");";
             html += '<a href="#" class="LevelLink" onclick="' + callMethod +'">' + levelCaption + '</a>';
         }
 
 		levelsBlock.html(html);
 
-
         $(document).ready(function(){
             // Инициализируем уровень.
-            Game.Init("GameField");
+            GameWindow.Init('GameField');
         });
 
 	</script>
-
 </body>
