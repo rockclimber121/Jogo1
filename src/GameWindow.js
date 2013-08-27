@@ -2,6 +2,12 @@
  * Окно игры. Отдельный фрейм с игровым полем. Содержит методы по работе с ним.
  */
 var GameWindow = {
+
+    /**
+     * Контрол для отображения номера текущего уровня.
+     */
+    controlChoosingLevel : undefined,
+
     /**
      * Контрол для отрисовки игрового поля.
      */
@@ -195,11 +201,12 @@ var GameWindow = {
     RegisterLevelChoosingControl : function(labelId, controlId, buttonId) {
         $("#" + labelId).text("Level number of " + this.Levels.length);
 
-        var levelChoosingControl = $("#" + controlId);
+        var controlChoosingLevel = $("#" + controlId);
+        this.controlChoosingLevel = controlChoosingLevel;
         var button = $("#" + buttonId)[0];
 
         button.onclick = function() {
-            var value = levelChoosingControl.val() - 0;
+            var value = controlChoosingLevel.val() - 0;
 
             if(value > 0 && value <= GameWindow.Levels.length)
                 GameWindow.LoadLevel(value - 1);
@@ -229,5 +236,8 @@ var GameWindow = {
 
         // Рисуем матрицу.
         GameWindow.Redraw();
+
+        // Обновляем номер текущего уровня после его загрузки.
+        this.controlChoosingLevel.val(levelNumber + 1);
     }
 };
