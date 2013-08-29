@@ -214,6 +214,9 @@ var Game = {
             }
         }
 
+        // Сформируем массив удаляемых монстров для передечи в метод Redraw.
+        var deletingMonsters = [];
+
         // Удалим лишних монстров - это нужно, если они соеденились.
         if(monstersForDelete.length > 0){
             monstersForDelete.sort(function(a, b){
@@ -223,12 +226,15 @@ var Game = {
             for(var i = 0; i < monstersForDelete.length; i ++){
                 // Проверяем, чтобы не было совпадений, а то удалятся нужные монстры.
                 if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
+                {
+                    deletingMonsters.push(monstersForDelete[i]);
                     this.monsters.splice(monstersForDelete[i], 1);
+                }
             }
         }
 
         if(needRefresh)
-            GameWindow.Redraw();
+            GameWindow.Redraw(deletingMonsters);
 
         if(!turnComplete)
             setTimeout(function() {

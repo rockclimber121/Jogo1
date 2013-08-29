@@ -24,6 +24,11 @@ var GameWindow = {
     CurrentLevel : undefined,
 
     /**
+     * Номер самого последнего доступного для прохождения уровня.
+     */
+    MaxLevelNumber : 1,
+
+    /**
      * Настройки отображения ячеек.
      */
     cellOptions : {
@@ -61,8 +66,13 @@ var GameWindow = {
 
     /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
+     * @param {array} deletingMonsters удаляемые монстры, опциональный параметр.
      */
-    Redraw : function() {
+    Redraw : function(deletingMonsters) {
+        if(deletingMonsters) {
+            // Здесь перебираем удаленных монстров.
+        }
+
         var context = GameWindow.canvas.getContext("2d");
         var cellOptions = this.cellOptions,
             images = this.images;
@@ -190,6 +200,8 @@ var GameWindow = {
             else
                 alert('The End');
         };
+
+        this.LoadCookies();
     },
 
     /**
@@ -239,5 +251,28 @@ var GameWindow = {
 
         // Обновляем номер текущего уровня после его загрузки.
         this.controlChoosingLevel.val(levelNumber + 1);
+        this.SaveCookies();
+    },
+
+    /**
+     * Сохраняем все настройки в куки.
+     */
+    SaveCookies : function(){
+        $.cookie.json = true;
+        $.cookie('c', {
+            currentLevel : GameWindow.CurrentLevel.Number
+        }, { expires : 365 });
+    },
+
+    /**
+     * Загружаем все настройки из куков.
+     */
+    LoadCookies : function(){
+        $.cookie.json = true;
+        var cookies = $.cookie("c");
+
+        if(cookies){
+            this.LoadLevel(cookies.currentLevel);
+        }
     }
 };
