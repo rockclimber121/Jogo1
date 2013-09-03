@@ -9,7 +9,7 @@ var GameWindow = {
     controlChoosingLevel : undefined,
 
     /**
-     * Контрол для отрисовки игрового поля.
+     * Полотно для отрисовки игрового поля.
      */
     canvas : undefined,
 
@@ -60,100 +60,62 @@ var GameWindow = {
     },
 
     /**
-     * Графика для игрового поля
-     */
-    images : undefined,
-
-    /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
      * @param {array} deletingMonsters удаляемые монстры, опциональный параметр.
      */
-    Redraw : function(deletingMonsters) {
-        if(deletingMonsters) {
-            // Здесь перебираем удаленных монстров.
-        }
+    Redraw : function() {
 
-        var context = GameWindow.canvas.getContext("2d");
-        var cellOptions = this.cellOptions,
-            images = this.images;
-
-        // Рисуем фон.
-        context.drawImage(this.images.hell, 0, 0);
-
-        // Отрисовка изображения по центру ячейки.
-        var drawImageInCell = function(cell, img) {
+        // Обновить объект в ячейке.
+        var updateObject = function(imgName, unit) {
+            var cell = unit.CurrentPosition;
+            var img = collie.ImageManager.getImage(imgName);
             var x = cell.X + (cell.Width - img.naturalWidth) / 2;
             var y = cell.Y + (cell.Height - img.naturalHeight) / 2;
-            context.drawImage(img, x, y);
+
+            var obj;
+            var characters = this.charLayer.getChildren();
+            for(var i = 0; i < characters.length; i++) {
+                if(characters[i].get('unit') == unit){
+                    obj = characters[i];
+                    break;
+                }
+            }
+
+            if (!obj)
+                throw 'collie object not found';
+
+            var context = this;
+            obj.move(x, y, 400, function () {
+                if (unit.deleted)
+                    context.charLayer.removeChild(obj);
+                else if (img != obj.getImage())
+                    obj.setImage(imgName);
+            });
         };
 
         // Отрисовка ячейки.
-        var drawCell = function(cell) {
-            context.beginPath();
-
-            context.fillStyle = cellOptions.fillColor;
-            context.rect(cell.X, cell.Y, cell.Width, cell.Height);
-            context.fill();
-
-            context.lineWidth = cellOptions.strokeWidth;
-            context.strokeStyle = cellOptions.strokeColor;
-            context.stroke();
-
-            if(cell.Place instanceof Trap)
-                drawImageInCell(cell, images.snag);
-            else if(cell.Place instanceof Home)
-                drawImageInCell(cell, images.house);
-
-            if(cell.Unit instanceof Hero) {
-                drawImageInCell(cell, images.hero);
+        var drawUnit = function(unit) {
+            if(unit instanceof Hero){
+                updateObject.call(this, 'hero', unit);
             }
-            else if(cell.Unit instanceof Monster) {
-                switch(cell.Unit.Power) {
+            else if(unit instanceof Monster){
+                switch(unit.Power) {
                     case 2:
                         // рисуем монстра с силой 1.
-                        drawImageInCell(cell, (cell.Unit.SkipTurns == 0) ? images.enemy : images.trappedEnemy);
+                        var imgName = (unit.SkipTurns == 0) ? 'enemy' : 'trappedEnemy';
+                        updateObject.call(this, imgName, unit);
                         break;
                     case 3:
                         // рисуем монстра с силой 2.
-                        drawImageInCell(cell, images.enemy2);
+                        updateObject.call(this, 'enemy2', unit);
                         break;
                 }
             }
         };
 
-        for(var i = 0; i < this.CurrentLevel.Cells.length; i++) {
-            for(var j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
-                drawCell(this.CurrentLevel.Cells[i][j]);
-            }
-        }
-
-        // Если есть дом вне поля, рисуем его.
-        if(this.CurrentLevel.CellOuterHome)
-            drawCell(this.CurrentLevel.CellOuterHome);
-
-        // Рисуем стенки после всего, чтобы они были поверх.
-        context.strokeStyle = this.wallOptions.color;
-        context.lineWidth = this.wallOptions.width;
-        context.lineCap = this.wallOptions.lineCap;
-
-        for(i = 0; i < this.CurrentLevel.Cells.length; i++)
-            for(j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
-                var cell = this.CurrentLevel.Cells[i][j];
-
-                if(cell.RightWall) {
-                    context.beginPath();
-                    context.moveTo(cell.X + cell.Width, cell.Y);
-                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
-                    context.stroke();
-                }
-
-                if(cell.BottomWall) {
-                    context.beginPath();
-                    context.moveTo(cell.X, cell.Y + cell.Height);
-                    context.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
-                    context.stroke();
-                }
-            }
+        drawUnit.call(this, Game.hero);
+        for(var i = 0; i < Game.monsters.length; i++)
+            drawUnit.call(this, Game.monsters[i]);
     },
 
     /**
@@ -164,29 +126,10 @@ var GameWindow = {
         this.Levels = Levels.GetAllLevels();
 
         // Загружаем графические ресурсы.
-        if (!this.images) {
-            this.images = { loadQueue: Object.keys(GameWindow.imageResources).length };
-
-            for (var imgKey in this.imageResources) {
-                var img = new Image();
-
-                img.onload = function() {
-                    GameWindow.images.loadQueue--;
-                };
-
-                img.src = this.imageResources[imgKey];
-                this.images[imgKey] = img;
-            }
-        }
-
-        // Ждем окончания загрузки графических ресурсов.
-        if(this.images.loadQueue > 0) {
-            setTimeout(function () { GameWindow.Init(canvasId); }, 100);
-            return;
-        }
+        for (var imgKey in this.imageResources)
+            collie.ImageManager.add(imgKey, this.imageResources[imgKey]);
 
         this.canvas = document.getElementById(canvasId);
-
         Game.Init(canvasId);
 
         Game.LoseEvent = function() {
@@ -225,17 +168,130 @@ var GameWindow = {
         };
     },
 
+    RenderLevel : function (fieldSize) {
+        var renderer = collie.Renderer;
+
+        // Очищаем всё полотно.
+        renderer.removeAllLayer();
+
+        // Фоновый слой (фон, стенки, другие статичные объекты).
+        this.bkgdLayer = new collie.Layer({
+            width : fieldSize.width,
+            height : fieldSize.height
+        });
+        renderer.addLayer(this.bkgdLayer);
+
+        // Слой персонажей (герой и монстры).
+        this.charLayer = new collie.Layer({
+            width: fieldSize.width,
+            height: fieldSize.height
+        });
+        renderer.addLayer(this.charLayer);
+
+        // Фоновое изображение игрового поля.
+        new collie.DisplayObject({
+            x : 0,
+            y : 0,
+            backgroundImage : "hell"
+        }).addTo(this.bkgdLayer);
+
+        renderer.load(this.canvas);
+        renderer.start();
+
+        // Добавить объект на слой.
+        var displayObject = function(cell, imgName, unit) {
+            var img = collie.ImageManager.getImage(imgName);
+            var x = cell.X + (cell.Width - img.naturalWidth) / 2;
+            var y = cell.Y + (cell.Height - img.naturalHeight) / 2;
+
+            var obj = new collie.DisplayObject({
+                x: x,
+                y: y,
+                backgroundImage: imgName,
+                unit: unit // связанный с объектом collie персонаж игры
+            });
+            obj.addTo(unit ? this.charLayer : this.bkgdLayer);
+        };
+
+        // Отрисовка ячейки.
+        var drawCell = function(cell) {
+
+            // Обрамление ячейки.
+            new collie.Rectangle({
+                width: cell.Width,
+                height: cell.Height,
+                x: cell.X,
+                y: cell.Y,
+                fillColor: this.cellOptions.fillColor,
+                strokeColor: this.cellOptions.strokeColor,
+                strokeWidth: this.cellOptions.strokeWidth
+            }).addTo(this.bkgdLayer);
+
+            if(cell.Place instanceof Trap)
+                displayObject.call(this, cell, 'snag');
+            else if(cell.Place instanceof Home)
+                displayObject.call(this, cell, 'house');
+
+            if(cell.Unit instanceof Hero){
+                displayObject.call(this, cell, 'hero', cell.Unit);
+            }
+            else if(cell.Unit instanceof Monster){
+                switch(cell.Unit.Power) {
+                    case 2:
+                        // рисуем монстра с силой 1.
+                        var imgName = (cell.Unit.SkipTurns == 0) ? 'enemy' : 'trappedEnemy';
+                        displayObject.call(this, cell, imgName, cell.Unit);
+                        break;
+                    case 3:
+                        // рисуем монстра с силой 2.
+                        displayObject.call(this, cell, 'enemy2', cell.Unit);
+                        break;
+                }
+            }
+        };
+
+        for(var i = 0; i < this.CurrentLevel.Cells.length; i++) {
+            for(var j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
+                drawCell.call(this, this.CurrentLevel.Cells[i][j]);
+            }
+        }
+
+        // Если есть дом вне поля, рисуем его.
+        if(this.CurrentLevel.CellOuterHome)
+            drawCell.call(this, this.CurrentLevel.CellOuterHome);
+
+        // Нанесение стенок на игровое поле.
+        for(i = 0; i < this.CurrentLevel.Cells.length; i++)
+        for(j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
+            var cell = this.CurrentLevel.Cells[i][j];
+            if (cell.RightWall || cell.BottomWall) {
+                var wall = new collie.Polyline({
+                    strokeColor: this.wallOptions.color,
+                    strokeWidth: this.wallOptions.width,
+                    lineCap: this.wallOptions.lineCap,
+                    lineJoin: this.wallOptions.lineCap,
+                    //dashArray : "-.",
+                    closePath: false
+                }).addTo(this.bkgdLayer);
+
+                if (cell.RightWall) {
+                    wall.moveTo(cell.X + cell.Width, cell.Y);
+                    wall.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
+                }
+
+                if (cell.BottomWall) {
+                    wall.moveTo(cell.X, cell.Y + cell.Height);
+                    wall.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
+                }
+            }
+        }
+    },
+
     /**
      * Загрузить новый уровень.
      * @param {number} levelNumber номер уровня, который необходимо загрузить.
      */
     LoadLevel : function(levelNumber) {
-        // Очищаем поле.
-        var context = this.canvas.getContext("2d");
-        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Рисуем фон.
-        context.drawImage(this.images.hell, 0, 0);
 
         // Зачищаем объекты в игре.
         Game.hero = undefined;
@@ -243,11 +299,11 @@ var GameWindow = {
         Game.gameOver = false;
 
         // Пересоздаем уровень игры.
-        this.CurrentLevel = new Level(this.Levels[levelNumber],
-            levelNumber, { width : this.canvas.width, height : this.canvas.height });
+        var fieldSize = { width : $(this.canvas).width(), height : $(this.canvas).height() };
+        this.CurrentLevel = new Level(this.Levels[levelNumber], levelNumber, fieldSize);
 
-        // Рисуем матрицу.
-        GameWindow.Redraw();
+        // Рендеринг уровня.
+        this.RenderLevel(fieldSize);
 
         // Обновляем номер текущего уровня после его загрузки.
         this.controlChoosingLevel.val(levelNumber + 1);

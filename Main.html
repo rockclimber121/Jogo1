@@ -1,6 +1,7 @@
 <head>
 	<script type="text/javascript" src="lib/jquery2.02.js"></script>
     <script type="text/javascript" src="lib/jquery.cookie.js"></script>
+    <script type="text/javascript" src="lib/collie.js"></script>
 	<script type="text/javascript" src="src/Levels.js"></script>
     <script type="text/javascript" src="src/Classes.js"></script>
     <script type="text/javascript" src="src/Level.js"></script>
@@ -16,10 +17,7 @@
     </div>
 
     <div id="GameBlock" class="GameBlock">
-        <!-- Размеры canvas должны указываться именно через атрибуты, а не через стили.
-        Иначе все изображение будет масштабироваться относительно стандартных размеров 300 на 150.-->
-        <canvas id="GameField" class="Canvas" width="800" height="600">
-        </canvas>
+        <div id="GameField" class="GameField" />
     </div>
 
 	<script LANGUAGE="javascript">

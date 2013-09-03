@@ -129,6 +129,7 @@ var Game = {
      * Монстры совершают по одному шагу, если могут.
      */
     DoOneStepForMonsters : function(){
+
         // Получить индекс монстра в массиве, который стоит на указаной позиции.
         var getMonsterIndexByPosition = function(positionCell) {
             for(var i = 0; i < Game.monsters.length; i++) {
@@ -143,9 +144,9 @@ var Game = {
         var turnComplete = true;
 
         // Флаг означающий, что монстры сделали хотя бы один шаг и необходимо перерисовать поле.
-        var needRefresh = false;
+        var needRedraw = false;
 
-        // Массив монстров для удаления. Необходим при соединении монстров.
+        // Массив индексов монстров для удаления. Необходим при соединении монстров.
         var monstersForDelete = [];
 
         // Перебираем всех монстров и пытаемся сделать ход.
@@ -181,7 +182,7 @@ var Game = {
                 // Передвигаем монстра в новую ячейку.
                 monster.CurrentPosition.Unit = undefined;
                 monster.CurrentPosition = nextCell;
-                needRefresh = true;
+                needRedraw = true;
 
                 // Если в новой ячейке уже стоял монстр, то объединяем их.
                 if (nextCell.Unit instanceof Monster) {
@@ -195,8 +196,8 @@ var Game = {
                 } else {
                     if(nextCell.Unit instanceof Hero){
                         // Пользователь проиграл, когда монстр попал в клетку с героем.
-                        // Но необходимо дать монстрам доходить до конца.
                         this.Lose();
+                        return;
                     }
                     else if(nextCell.Place instanceof Trap && monster.SkipTurnsEnabled) {
                         // Монстр пропускает 3 хода + текущий.
@@ -214,27 +215,23 @@ var Game = {
             }
         }
 
-        // Сформируем массив удаляемых монстров для передечи в метод Redraw.
-        var deletingMonsters = [];
-
-        // Удалим лишних монстров - это нужно, если они соеденились.
-        if(monstersForDelete.length > 0){
-            monstersForDelete.sort(function(a, b){
-                return b-a;
-            });
-
-            for(var i = 0; i < monstersForDelete.length; i ++){
-                // Проверяем, чтобы не было совпадений, а то удалятся нужные монстры.
-                if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
-                {
-                    deletingMonsters.push(monstersForDelete[i]);
-                    this.monsters.splice(monstersForDelete[i], 1);
-                }
-            }
+        // Отметим лишних монстров - это нужно, если они соеденились.
+        // После перерисовки игрового поля их нужно будет удалить.
+        monstersForDelete.sort(function(a, b){ return b-a; });
+        for(var i = 0; i < monstersForDelete.length; i++){
+            // Проверяем, чтобы не было совпадений, а то удалятся нужные монстры.
+            if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
+                this.monsters[monstersForDelete[i]].deleted = true;
         }
 
-        if(needRefresh)
-            GameWindow.Redraw(deletingMonsters);
+        if(needRedraw)
+            GameWindow.Redraw();
+
+        // Удаляем лишних монстров, они нам больше не нужны.
+        for(var i = 0; i < monstersForDelete.length; i++) {
+            if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
+                this.monsters.splice(monstersForDelete[i], 1);
+        }
 
         if(!turnComplete)
             setTimeout(function() {

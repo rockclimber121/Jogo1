@@ -8,10 +8,14 @@
     margin-top: 10;
 }
 
-.GameBlock {
-    background-color: #17d43d;
+.GameBlock,
+.GameField {
     width: 800px;
     height: 600px;
+}
+
+.GameBlock {
+    background-color: #17d43d;
     position: absolute;
     margin-left: 110px;
     margin-top: 10;
