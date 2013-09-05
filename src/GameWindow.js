@@ -267,13 +267,52 @@ var GameWindow = {
         var drawCell = function(cell) {
 
             // Отрисовка пустой ячейки.
-            new collie.Rectangle({
+            var cellObj = new collie.Rectangle({
                 width: cell.Width,
                 height: cell.Height,
                 x: cell.X,
                 y: cell.Y,
-                backgroundImage: 'cell'
+                backgroundImage: 'cell',
+                useEvent: true // для поддержки метода _isPointInDisplayObjectBoundary (см. ниже).
             }).addTo(this.bkgdLayer);
+
+            // Выделение ячейки при наведении указателя мыши на нее.
+            // collie.DisplayObject не поддерживает событие mousemove. Поэтому подписываемся на весь слой.
+            this.bkgdLayer.attach({
+                mousemove : function (e) {
+                    // true, если объект находится под точкой [e.x, e.y].
+                    var cellHit = collie.LayerEvent.prototype._isPointInDisplayObjectBoundary(cellObj, e.x, e.y);
+
+                    var heroCell = Game.hero.CurrentPosition,
+                        colDistance = Math.abs(heroCell.Col - cell.Col),
+                        rowDistance = Math.abs(heroCell.Row - cell.Row);
+
+                    // true, если cell и heroCell находятся рядом.
+                    var nearHero = (colDistance + rowDistance === 1);
+
+                    var spriteX;
+                    if(Game.animating)
+                        spriteX = 0;
+                    else if(cellHit && nearHero)
+                        spriteX = e.event.which ? 2 : 1;
+                    else
+                        spriteX = 0;
+
+                    cellObj.set('spriteX', spriteX);
+                }
+            });
+
+            // Выделение ячейки при нажатии кнопки мыши.
+            cellObj.attach({
+                mousedown : function (e) {
+                    if(cellObj.get('spriteX'))
+                        cellObj.set('spriteX', 2);
+                },
+                mouseup : function (e) {
+                    if(cellObj.get('spriteX'))
+                        cellObj.set('spriteX', 1);
+                }
+            });
 
             // Нанесение декораций внутри ячейки.
             // Берем случайное число из интервала 1..20.
