@@ -29,24 +29,6 @@ var GameWindow = {
     MaxLevelNumber : 1,
 
     /**
-     * Настройки отображения ячеек.
-     */
-    cellOptions : {
-        fillColor: 'transparent', // Фон.
-        strokeWidth: 1, // Ширина границы.
-        strokeColor: 'white' // Цвет границы.
-    },
-
-    /**
-     * Настройки отображения стен между ячейками (стенкой считается непреодолимое препятсвие).
-     */
-    wallOptions : {
-        width: 6, // Толщина стенки.
-        color: 'black', // Цвет стенки.
-        lineCap: 'round' // Тип наконечника линии (context.lineCap: butt, round, square).
-    },
-
-    /**
      * Графические ресурсы игрового поля.
      */
     imageResources : {
@@ -55,8 +37,12 @@ var GameWindow = {
         enemy2: "images/enemy2.png", // Вражеский персонаж с силой 2.
         hero: "images/hero.png", // Герой.
         house: "images/house.png", // Дом - цель героя.
-        snag: "images/snag.png", // Ловушка, на которой вражеский персонаж теряет игровые ходы.
-        hell: "images/hell.png" // Фон игрового поля.
+        trap: "images/trap.png", // Ловушка, на которой вражеский персонаж теряет игровые ходы.
+        background: "images/background.png", // Фон игрового поля.
+        cell: "images/cell.png", // Фон пустой ячейки.
+        tree: "images/tree.png", // Декорация: ёлка.
+        wall: "images/wall.png", // Стена (препятствие).
+        decor: "images/decor.png" // Прочие декорации.
     },
 
     /**
@@ -67,11 +53,6 @@ var GameWindow = {
 
         // Обновить объект в ячейке.
         var updateObject = function(imgName, unit) {
-            var cell = unit.CurrentPosition;
-            var img = collie.ImageManager.getImage(imgName);
-            var x = cell.X + (cell.Width - img.naturalWidth) / 2;
-            var y = cell.Y + (cell.Height - img.naturalHeight) / 2;
-
             var obj;
             var characters = this.charLayer.getChildren();
             for(var i = 0; i < characters.length; i++) {
@@ -84,16 +65,72 @@ var GameWindow = {
             if (!obj)
                 throw 'collie object not found';
 
-            var context = this;
-            obj.move(x, y, 400, function () {
-                if (unit.deleted)
-                    context.charLayer.removeChild(obj);
-                else if (img != obj.getImage())
-                    obj.setImage(imgName);
+            var cell = unit.CurrentPosition;
+            var prevCell = obj.get('prevCell');
+            obj.set('prevCell', $.extend({}, cell));
+
+            if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
+                obj.setImage(imgName);
+                return;
+            }
+
+            var oldAnimation = obj.get('animation');
+            if(oldAnimation)
+                oldAnimation.stop();
+
+            // Поворот персонажа в зависимости от направления движения.
+            // Номер строки со спрайтами в изображении.
+            var spriteY;
+            if(cell.Row > prevCell.Row)
+                spriteY = 0;
+            else if(cell.Col < prevCell.Col)
+                spriteY = 1;
+            else if(cell.Col > prevCell.Col)
+                spriteY = 2;
+            else if(cell.Row < prevCell.Row)
+                spriteY = 3;
+
+            if(spriteY != null)
+                obj.set('spriteY', spriteY);
+
+            // Анимация ходьбы персонажа.
+            var objAnimation = collie.Timer.cycle(obj, "15fps", {
+                from : 0,
+                to : 2,
+                loop : 0,
+                set : "spriteX"
             });
+            obj.set('animation', objAnimation);
+
+            // Новая позиция объекта.
+            var x = cell.X + (cell.Width - obj.get('width')) / 2,
+                y = cell.Y + (cell.Height - obj.get('height')) / 2;
+
+            // Анимированное перемещение персонажа.
+            var context = this;
+            obj.move(x, y, 100, function () {
+                objAnimation.stop();
+                obj.set('animation', null);
+                obj.set('spriteX', 0);
+
+                if (unit.deleted) {
+                    context.charLayer.removeChild(obj);
+                }
+                else {
+                    obj.setImage(imgName);
+                }
+            });
+
+            if(unit instanceof Hero && cell.Place instanceof Home) {
+                collie.Timer.transition(obj, 400, {
+                    from : 1,
+                    to : 0,
+                    set : "opacity"
+                });
+            }
         };
 
-        // Отрисовка ячейки.
+        // Обновление объекта в ячейке.
         var drawUnit = function(unit) {
             if(unit instanceof Hero){
                 updateObject.call(this, 'hero', unit);
@@ -102,7 +139,7 @@ var GameWindow = {
                 switch(unit.Power) {
                     case 2:
                         // рисуем монстра с силой 1.
-                        var imgName = (unit.SkipTurns == 0) ? 'enemy' : 'trappedEnemy';
+                        var imgName = (unit.SkipTurns <= 1) ? 'enemy' : 'trappedEnemy';
                         updateObject.call(this, imgName, unit);
                         break;
                     case 3:
@@ -192,59 +229,128 @@ var GameWindow = {
         new collie.DisplayObject({
             x : 0,
             y : 0,
-            backgroundImage : "hell"
+            width : fieldSize.width,
+            height: fieldSize.height,
+            backgroundImage : "background",
+            backgroundRepeat : "repeat"
         }).addTo(this.bkgdLayer);
 
         renderer.load(this.canvas);
         renderer.start();
 
-        // Добавить объект на слой.
-        var displayObject = function(cell, imgName, unit) {
+        // Добавить объект в слой.
+        var displayObject = function(cell, imgName, unit, width, height) {
             var img = collie.ImageManager.getImage(imgName);
-            var x = cell.X + (cell.Width - img.naturalWidth) / 2;
-            var y = cell.Y + (cell.Height - img.naturalHeight) / 2;
+            width = width || img.naturalWidth;
+            height = height || img.naturalHeight;
+            var x = cell.X + (cell.Width - width) / 2;
+            var y = cell.Y + (cell.Height - height) / 2;
 
             var obj = new collie.DisplayObject({
                 x: x,
                 y: y,
-                backgroundImage: imgName,
-                unit: unit // связанный с объектом collie персонаж игры
+                width: width,
+                height: height,
+                backgroundImage: imgName
             });
+
+            if(unit) {
+                obj.set('unit', unit); // связанный с объектом collie персонаж игры.
+                obj.set('prevCell', $.extend({}, unit.CurrentPosition)); // запомним позицию.
+            }
+
             obj.addTo(unit ? this.charLayer : this.bkgdLayer);
+            return obj;
         };
 
         // Отрисовка ячейки.
         var drawCell = function(cell) {
 
-            // Обрамление ячейки.
+            // Отрисовка пустой ячейки.
             new collie.Rectangle({
                 width: cell.Width,
                 height: cell.Height,
                 x: cell.X,
                 y: cell.Y,
-                fillColor: this.cellOptions.fillColor,
-                strokeColor: this.cellOptions.strokeColor,
-                strokeWidth: this.cellOptions.strokeWidth
+                backgroundImage: 'cell'
             }).addTo(this.bkgdLayer);
 
-            if(cell.Place instanceof Trap)
-                displayObject.call(this, cell, 'snag');
+            // Нанесение декораций внутри ячейки.
+            // Берем случайное число из интервала 1..20.
+            // Вероятность наличия декорации в ячейке - decorSpritesCount\20
+            var decorNumber = Math.floor((Math.random()*20)+1);
+            var decorSpritesCount = 6; // количество спрайтов в изображении.
+            if(decorNumber < decorSpritesCount) {
+                var decorObj = new collie.Rectangle({
+                    width: cell.Width,
+                    height: cell.Height,
+                    x: cell.X,
+                    y: cell.Y,
+                    backgroundImage: 'decor'
+                }).addTo(this.bkgdLayer);
+                decorObj.set('spriteX', decorNumber);
+            }
+
+            // Нанесение декораций вне ячейки и игрового поля.
+            var extraCells = [];
+            var lastCol = this.CurrentLevel.Cells[0].length - 1;
+            var lastRow = this.CurrentLevel.Cells.length - 1;
+
+            if(cell.Col === 0)
+                extraCells.push({x: cell.X - cell.Width, y: cell.Y});
+            else if(cell.Col == lastCol)
+                extraCells.push({x: cell.X + cell.Width, y: cell.Y});
+
+            if(cell.Row === 0)
+                extraCells.push({x: cell.X, y: cell.Y - cell.Height});
+            else if(cell.Row == lastRow)
+                extraCells.push({x: cell.X, y: cell.Y + cell.Height});
+
+            if(cell.Col === 0 && cell.Row === 0)
+                extraCells.push({x: cell.X - cell.Width, y: cell.Y - cell.Height});
+            else if(cell.Col === lastCol && cell.Row === lastRow)
+                extraCells.push({x: cell.X + cell.Width, y: cell.Y + cell.Height});
+            else if(cell.Col === 0 && cell.Row === lastRow)
+                extraCells.push({x: cell.X - cell.Width, y: cell.Y + cell.Height});
+            else if(cell.Col === lastCol && cell.Row === 0)
+                extraCells.push({x: cell.X + cell.Width, y: cell.Y - cell.Height});
+
+            for(var i = 0; i < extraCells.length; i++){
+                new collie.Rectangle({
+                    width: cell.Width,
+                    height: cell.Height,
+                    x: extraCells[i].x,
+                    y: extraCells[i].y,
+                    backgroundImage: 'tree'
+                }).addTo(this.bkgdLayer);
+            }
+
+            // Рендеринг основного содержимого ячейки.
+            if(cell.Place instanceof Trap) {
+                var obj = displayObject.call(this, cell, 'trap', null, 32, 50);
+                collie.Timer.cycle(obj, "14fps", {
+                    from : 0,
+                    to : 2,
+                    loop : 0,
+                    set : "spriteX"
+                });
+            }
             else if(cell.Place instanceof Home)
                 displayObject.call(this, cell, 'house');
 
             if(cell.Unit instanceof Hero){
-                displayObject.call(this, cell, 'hero', cell.Unit);
+                displayObject.call(this, cell, 'hero', cell.Unit, 32, 32);
             }
             else if(cell.Unit instanceof Monster){
                 switch(cell.Unit.Power) {
                     case 2:
                         // рисуем монстра с силой 1.
                         var imgName = (cell.Unit.SkipTurns == 0) ? 'enemy' : 'trappedEnemy';
-                        displayObject.call(this, cell, imgName, cell.Unit);
+                        displayObject.call(this, cell, imgName, cell.Unit, 32, 32);
                         break;
                     case 3:
                         // рисуем монстра с силой 2.
-                        displayObject.call(this, cell, 'enemy2', cell.Unit);
+                        displayObject.call(this, cell, 'enemy2', cell.Unit, 32, 32);
                         break;
                 }
             }
@@ -261,28 +367,30 @@ var GameWindow = {
             drawCell.call(this, this.CurrentLevel.CellOuterHome);
 
         // Нанесение стенок на игровое поле.
+        var wallImg = collie.ImageManager.getImage('wall');
         for(i = 0; i < this.CurrentLevel.Cells.length; i++)
         for(j = 0; j < this.CurrentLevel.Cells[i].length; j++) {
             var cell = this.CurrentLevel.Cells[i][j];
-            if (cell.RightWall || cell.BottomWall) {
-                var wall = new collie.Polyline({
-                    strokeColor: this.wallOptions.color,
-                    strokeWidth: this.wallOptions.width,
-                    lineCap: this.wallOptions.lineCap,
-                    lineJoin: this.wallOptions.lineCap,
-                    //dashArray : "-.",
-                    closePath: false
+
+            if (cell.RightWall) {
+                new collie.Rectangle({
+                    width: wallImg.naturalWidth,
+                    height: wallImg.naturalHeight,
+                    angle: 90,
+                    x: cell.X + cell.Width / 2,
+                    y: cell.Y + (cell.Height - wallImg.naturalHeight) / 2,
+                    backgroundImage: 'wall'
                 }).addTo(this.bkgdLayer);
+            }
 
-                if (cell.RightWall) {
-                    wall.moveTo(cell.X + cell.Width, cell.Y);
-                    wall.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
-                }
-
-                if (cell.BottomWall) {
-                    wall.moveTo(cell.X, cell.Y + cell.Height);
-                    wall.lineTo(cell.X + cell.Width, cell.Y + cell.Height);
-                }
+            if (cell.BottomWall) {
+                new collie.Rectangle({
+                    width: wallImg.naturalWidth,
+                    height: wallImg.naturalHeight,
+                    x: cell.X,
+                    y: cell.Y + cell.Height - wallImg.naturalHeight / 2,
+                    backgroundImage: 'wall'
+                }).addTo(this.bkgdLayer);
             }
         }
     },

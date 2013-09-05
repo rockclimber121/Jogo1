@@ -92,7 +92,6 @@ function Level(level, number, fieldSize) {
     }
 
     // Шаг 2. Актуализируем стенки в ячейках.
-
     for(i = 0; i < field.length; i++) {
         for(j = 0; j < field[i].length; j++) {
             // Если это нечетная строчка, то стенки на четных позициях.

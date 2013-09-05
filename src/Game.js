@@ -7,7 +7,7 @@ var Game = {
      */
     timeOutOptions : {
         HeroStepTimeOut : 200,    // Задержка пока герой сделает ход, необходима для анимации.
-        MonsterStepTimeOut : 200  // Задержка пока монстр сделает ход, необходима для анимации.
+        MonsterStepTimeOut : 500  // Задержка пока монстр сделает ход, необходима для анимации.
     },
 
     /**
@@ -84,26 +84,26 @@ var Game = {
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == 1 && !currentCell.RightWall ||
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == -1 && !currentCell.LeftWall) {
 
-           if(cell.Place instanceof Trap || cell.Unit instanceof Monster) {
-                this.Lose();
-           }
-           else if(cell.Place instanceof Home) {
-               this.Win();
-           }
-           else {
-               // Для шага переназначаем значения ячеек.
-               cell.Unit = this.hero;
-               currentCell.Unit = undefined;
-               this.hero.CurrentPosition = cell;
+           // Для шага переназначаем значения ячеек.
+           cell.Unit = this.hero;
+           currentCell.Unit = undefined;
+           this.hero.CurrentPosition = cell;
 
-               // Перерисовываем поле, чтобы увидеть как сходит герой.
-               GameWindow.Redraw();
+           // Перерисовываем поле, чтобы увидеть как сходит герой.
+           GameWindow.Redraw();
 
-               // Передвигаем монстров.
-               setTimeout(function(){
-                   Game.MoveMonsters();
-               }, this.timeOutOptions.HeroStepTimeOut);
-           }
+            if(cell.Place instanceof Trap || cell.Unit instanceof Monster)
+                setTimeout(function () {
+                    Game.Lose();
+                }, 800); // todo: разобраться с timeOutOptions. Здесь HeroStepTimeOut оказывается мало, а 800мс самое то.
+            else if(cell.Place instanceof Home)
+                setTimeout(function () {
+                    Game.Win();
+                }, 800);
+            else
+                setTimeout(function () {
+                    Game.MoveMonsters();
+                }, this.timeOutOptions.HeroStepTimeOut); // Передвигаем монстров.
         }
         else {
             this.EndTurn();
@@ -148,6 +148,9 @@ var Game = {
 
         // Массив индексов монстров для удаления. Необходим при соединении монстров.
         var monstersForDelete = [];
+
+        // true, если пользователь проиграл (монстр догнал героя).
+        var lose = false;
 
         // Перебираем всех монстров и пытаемся сделать ход.
         for(i = 0; i < this.monsters.length; i++) {
@@ -196,8 +199,7 @@ var Game = {
                 } else {
                     if(nextCell.Unit instanceof Hero){
                         // Пользователь проиграл, когда монстр попал в клетку с героем.
-                        this.Lose();
-                        return;
+                        lose = true;
                     }
                     else if(nextCell.Place instanceof Trap && monster.SkipTurnsEnabled) {
                         // Монстр пропускает 3 хода + текущий.
@@ -231,6 +233,13 @@ var Game = {
         for(var i = 0; i < monstersForDelete.length; i++) {
             if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
                 this.monsters.splice(monstersForDelete[i], 1);
+        }
+
+        if(lose) {
+            setTimeout(function() {
+                Game.Lose();
+            }, this.timeOutOptions.MonsterStepTimeOut);
+            return;
         }
 
         if(!turnComplete)
