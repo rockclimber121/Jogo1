@@ -47,9 +47,10 @@ var GameWindow = {
 
     /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
-     * @param {array} deletingMonsters удаляемые монстры, опциональный параметр.
+     * @param {function} onSuccess Callback-функция, уведомляющая об окончании перерисовки поля.
+     *                             Вызывается после завершения последней анимации.
      */
-    Redraw : function() {
+    Redraw : function(onSuccess) {
 
         // Обновить объект в ячейке.
         var updateObject = function(imgName, unit) {
@@ -71,6 +72,10 @@ var GameWindow = {
 
             if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
                 obj.setImage(imgName);
+
+                if(--animationQueue === 0 && onSuccess)
+                    onSuccess();
+
                 return;
             }
 
@@ -113,12 +118,13 @@ var GameWindow = {
                 obj.set('animation', null);
                 obj.set('spriteX', 0);
 
-                if (unit.deleted) {
+                if (unit.deleted)
                     context.charLayer.removeChild(obj);
-                }
-                else {
+                else
                     obj.setImage(imgName);
-                }
+
+                if(--animationQueue === 0 && onSuccess)
+                    onSuccess();
             });
 
             if(unit instanceof Hero && cell.Place instanceof Home) {
@@ -149,6 +155,10 @@ var GameWindow = {
                 }
             }
         };
+
+        // Количество анимаций в очереди.
+        // Подсчитывается, чтобы вызвать onSuccess после завершения последней анимации.
+        var animationQueue = 1 + Game.monsters.length;
 
         drawUnit.call(this, Game.hero);
         for(var i = 0; i < Game.monsters.length; i++)

@@ -3,14 +3,6 @@
  */
 var Game = {
     /**
-     * Настройки задержки времени до выполнения каких-либо операций в игре.
-     */
-    timeOutOptions : {
-        HeroStepTimeOut : 200,    // Задержка пока герой сделает ход, необходима для анимации.
-        MonsterStepTimeOut : 500  // Задержка пока монстр сделает ход, необходима для анимации.
-    },
-
-    /**
      * Делегат. Срабатывает, когда пользователь выйграл.
      */
     WinEvent : undefined,
@@ -90,20 +82,14 @@ var Game = {
            this.hero.CurrentPosition = cell;
 
            // Перерисовываем поле, чтобы увидеть как сходит герой.
-           GameWindow.Redraw();
-
-            if(cell.Place instanceof Trap || cell.Unit instanceof Monster)
-                setTimeout(function () {
-                    Game.Lose();
-                }, 800); // todo: разобраться с timeOutOptions. Здесь HeroStepTimeOut оказывается мало, а 800мс самое то.
-            else if(cell.Place instanceof Home)
-                setTimeout(function () {
-                    Game.Win();
-                }, 800);
-            else
-                setTimeout(function () {
-                    Game.MoveMonsters();
-                }, this.timeOutOptions.HeroStepTimeOut); // Передвигаем монстров.
+           GameWindow.Redraw(function() {
+               if(cell.Place instanceof Trap || cell.Unit instanceof Monster)
+                   Game.Lose(); // Если герой встал на ловушку, либо если герой встретился с врагом, тогда проигрыш.
+               else if(cell.Place instanceof Home)
+                   Game.Win(); // Если герой вошел в дом, то засчитываем победу.
+               else
+                   Game.MoveMonsters(); // Передвигаем монстров.
+           });
         }
         else {
             this.EndTurn();
@@ -111,24 +97,22 @@ var Game = {
     },
 
     MoveMonsters : function() {
-
-       setTimeout(function() {
-           Game.DoOneStepForMonsters();
-       }, this.timeOutOptions.MonsterStepTimeOut);
-
-       // После того как все отходили, проставляем их ходы обратно.
-       // Для попавших в ловушку уменьшаем время простоя.
-       $.each(this.monsters, function() {
-           this.Steps = this.Power;
-           if(this.SkipTurns > 0)
-               this.SkipTurns--;
+       Game.DoOneStepForMonsters(function() {
+           // После того как все отходили, проставляем их ходы обратно.
+           // Для попавших в ловушку уменьшаем время простоя.
+           $.each(Game.monsters, function() {
+               this.Steps = this.Power;
+               if(this.SkipTurns > 0)
+                   this.SkipTurns--;
+           });
        });
     },
 
     /**
      * Монстры совершают по одному шагу, если могут.
+     * @param {function} onSuccess Callback-функция, уведомляющая об окончании перемещения монстров.
      */
-    DoOneStepForMonsters : function(){
+    DoOneStepForMonsters : function(onSuccess){
 
         // Получить индекс монстра в массиве, который стоит на указаной позиции.
         var getMonsterIndexByPosition = function(positionCell) {
@@ -226,28 +210,28 @@ var Game = {
                 this.monsters[monstersForDelete[i]].deleted = true;
         }
 
-        if(needRedraw)
-            GameWindow.Redraw();
+        var stepComplete = function () {
+            // Удаляем лишних монстров, они нам больше не нужны.
+            for(var i = 0; i < monstersForDelete.length; i++) {
+                if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
+                    Game.monsters.splice(monstersForDelete[i], 1);
+            }
 
-        // Удаляем лишних монстров, они нам больше не нужны.
-        for(var i = 0; i < monstersForDelete.length; i++) {
-            if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
-                this.monsters.splice(monstersForDelete[i], 1);
-        }
-
-        if(lose) {
-            setTimeout(function() {
+            if(lose)
                 Game.Lose();
-            }, this.timeOutOptions.MonsterStepTimeOut);
-            return;
-        }
-
-        if(!turnComplete)
-            setTimeout(function() {
+            else if(!turnComplete)
                 Game.DoOneStepForMonsters();
-            }, this.timeOutOptions.MonsterStepTimeOut);
+            else
+                Game.EndTurn();
+
+            if(onSuccess)
+                onSuccess();
+        };
+
+        if(needRedraw)
+            GameWindow.Redraw(stepComplete);
         else
-            this.EndTurn();
+            stepComplete();
     },
 
     /**
