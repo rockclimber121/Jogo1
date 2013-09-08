@@ -42,7 +42,9 @@ var GameWindow = {
         cell: "images/cell.png", // Фон пустой ячейки.
         tree: "images/tree.png", // Декорация: ёлка.
         wall: "images/wall.png", // Стена (препятствие).
-        decor: "images/decor.png" // Прочие декорации.
+        decor: "images/decor.png", // Прочие декорации.
+        heroBeaten: "images/heroBeaten.png", // "Драка" героя и врага - проигрыш.
+        heroTrapped: "images/heroTrapped.png" // Герой оказался в ловушке (Trap) - проигрыш.
     },
 
     /**
@@ -128,11 +130,72 @@ var GameWindow = {
             });
 
             if(unit instanceof Hero && cell.Place instanceof Home) {
+                // Герой дошел до дома и выиграл.
+                // Эффект "исчезание", когда герой двигается к дому.
                 collie.Timer.transition(obj, 400, {
                     from : 1,
                     to : 0,
                     set : "opacity"
                 });
+            }
+            else if(unit instanceof Hero || unit instanceof Monster) {
+                var lose;
+
+                // Проверим, встретились ли герой и монстр (проигрыш).
+                // Если встретились, то отобразим клубы дыма над ними, типо драка.
+                if(unit instanceof Monster && unit.CurrentPosition == Game.hero.CurrentPosition) {
+                    lose = 'heroBeaten';
+                }
+                else if(unit instanceof Hero) {
+                    for(var i = 0; i < Game.monsters.length; i++) {
+                        if(unit.CurrentPosition == Game.monsters[i].CurrentPosition){
+                            lose = 'heroBeaten';
+                            break;
+                        }
+                    }
+                }
+
+                // Проверим, не попал ли герой в ловушку (проигрыш).
+                // Если так, то отобразим клубы огня над героем.
+                if(!lose && Game.hero.CurrentPosition.Place instanceof Trap)
+                    lose = 'heroTrapped';
+
+                if(lose) {
+                    animationQueue++;
+
+                    // Объект "проигрыш" (клубы дыма или огня). Изначально скрыт (opacity: 0).
+                    var loseObj = new collie.DisplayObject({
+                        x: x - (60 - 32) / 2,
+                        y: y - (60 - 32) / 2,
+                        width: 60,
+                        height: 60,
+                        opacity: 0,
+                        backgroundImage: lose
+                    });
+                    loseObj.addTo(this.charLayer);
+
+                    // Делаем задержку, чтобы расстояние между героем и монстром сократилось до ~1\2 клетки.
+                    // Затем делаем видимым объект "проигрыш" (opacity -> 1) и анимируем его (спрайты).
+                    collie.Timer.queue()
+                                .delay(function () {}, 400)
+                                .transition(loseObj, 100, {
+                                    from : 0,
+                                    to : 1,
+                                    set : "opacity",
+                                    onComplete : function () {
+                                        setTimeout(function() {
+                                            if(--animationQueue === 0 && onSuccess)
+                                                onSuccess();
+                                        }, 700);
+                                    }
+                                })
+                                .cycle(loseObj,  "30fps", {
+                                    from : 1,
+                                    to : 7,
+                                    loop : 0,
+                                    set : "spriteX"
+                                });
+                }
             }
         };
 
