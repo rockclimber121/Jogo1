@@ -302,20 +302,16 @@ var Game = {
     Win : function() {
         this.gameOver = true;
         this.EndTurn();
-        alert("Complete");
 
-        if(this.WinEvent) {
+        if(this.WinEvent)
             this.WinEvent();
-        }
     },
 
     Lose : function() {
         this.gameOver = true;
         this.EndTurn();
-        alert("Fail");
 
-        if(this.LoseEvent) {
+        if(this.LoseEvent)
             this.LoseEvent();
-        }
     }
 };

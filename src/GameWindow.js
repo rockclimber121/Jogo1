@@ -48,6 +48,11 @@ var GameWindow = {
     },
 
     /**
+     * Звуки в игре.
+     */
+    music : {},
+
+    /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
      * @param {function} onSuccess Callback-функция, уведомляющая об окончании перерисовки поля.
      *                             Вызывается после завершения последней анимации.
@@ -137,6 +142,10 @@ var GameWindow = {
                     to : 0,
                     set : "opacity"
                 });
+
+                $(GameWindow.music.background).animate({volume: 0}, 500);
+                var snd = new Audio('sounds/victory.mp3');
+                snd.play();
             }
             else if(unit instanceof Hero || unit instanceof Monster) {
                 var lose;
@@ -195,6 +204,10 @@ var GameWindow = {
                                     loop : 0,
                                     set : "spriteX"
                                 });
+
+                    $(GameWindow.music.background).animate({volume: 0}, 500);
+                    var snd = new Audio('sounds/fail.mp3');
+                    snd.play();
                 }
             }
         };
@@ -243,15 +256,19 @@ var GameWindow = {
         Game.Init(canvasId);
 
         Game.LoseEvent = function() {
-            GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
+            setTimeout(function() {
+                GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
+            }, 2500);
         };
 
         Game.WinEvent = function() {
-            var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
-            if(numberNextLevel < GameWindow.Levels.length)
-                GameWindow.LoadLevel(numberNextLevel);
-            else
-                alert('The End');
+            setTimeout(function() {
+                var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
+                if(numberNextLevel < GameWindow.Levels.length)
+                    GameWindow.LoadLevel(numberNextLevel);
+                else
+                    alert('The End');
+            }, 2500);
         };
 
         this.LoadCookies();
@@ -364,7 +381,7 @@ var GameWindow = {
                     var nearHero = (colDistance + rowDistance === 1);
 
                     var spriteX;
-                    if(Game.animating)
+                    if(Game.animating || Game.gameOver)
                         spriteX = 0;
                     else if(cellHit && nearHero)
                         spriteX = e.event.which ? 2 : 1;
@@ -521,6 +538,18 @@ var GameWindow = {
         // Пересоздаем уровень игры.
         var fieldSize = { width : $(this.canvas).width(), height : $(this.canvas).height() };
         this.CurrentLevel = new Level(this.Levels[levelNumber], levelNumber, fieldSize);
+
+        // Музыкальное сопровождение - фоновая музыка.
+        var backMusic = this.music.background;
+        if(backMusic)
+            backMusic.pause();
+        var trackNumber = Math.floor((Math.random()*5)+1); // random 1..5
+        backMusic = new Audio("sounds/background" + trackNumber + ".mp3");
+        backMusic.loop = true;
+        backMusic.volume = 0;
+        backMusic.play();
+        $(backMusic).animate({volume: 0.2}, 1500); // плавное увеличение громкости.
+        this.music.background = backMusic;
 
         // Рендеринг уровня.
         this.RenderLevel(fieldSize);
