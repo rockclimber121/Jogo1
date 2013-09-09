@@ -217,15 +217,18 @@ var Game = {
                     Game.monsters.splice(monstersForDelete[i], 1);
             }
 
-            if(lose)
-                Game.Lose();
-            else if(!turnComplete)
-                Game.DoOneStepForMonsters();
-            else
-                Game.EndTurn();
+            if(!lose && !turnComplete)
+            {
+                Game.DoOneStepForMonsters(onSuccess);
+            } else {
+                if(onSuccess)
+                    onSuccess();
 
-            if(onSuccess)
-                onSuccess();
+                if(lose)
+                    Game.Lose();
+                else
+                    Game.EndTurn();
+            }
         };
 
         if(needRedraw)
