@@ -312,9 +312,10 @@ var Game = {
 
     Lose : function() {
         this.gameOver = true;
-        this.EndTurn();
 
         if(this.LoseEvent)
             this.LoseEvent();
+        else
+            this.EndTurn();
     }
 };

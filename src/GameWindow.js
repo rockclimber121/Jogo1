@@ -258,6 +258,7 @@ var GameWindow = {
         Game.LoseEvent = function() {
             setTimeout(function() {
                 GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
+                Game.EndTurn();
             }, 2500);
         };
 
