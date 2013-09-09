@@ -303,11 +303,27 @@ var GameWindow = {
         renderer.removeAllLayer();
 
         // Фоновый слой (фон, стенки, другие статичные объекты).
-        this.bkgdLayer = new collie.Layer({
+        var bkgdLayer = this.bkgdLayer = new collie.Layer({
             width : fieldSize.width,
             height : fieldSize.height
         });
         renderer.addLayer(this.bkgdLayer);
+
+        // Запомнить последние данные о событии мыши,
+        // чтобы по окончанию хода обновить выделение ячейки под курсором.
+        var saveLastMouseEvent = function (e) {
+            bkgdLayer.set('LastMouseEvent', e);
+        };
+        this.bkgdLayer.attach({
+            mousemove : saveLastMouseEvent,
+            mousedown : saveLastMouseEvent,
+            mouseup : saveLastMouseEvent
+        });
+        Game.EndTurnEvent = function() {
+            // Обновление выделения ячейки под курсором после завершения хода.
+            var lastMouseEvent = bkgdLayer.get('LastMouseEvent');
+            bkgdLayer.fireEvent('mousemove', lastMouseEvent);
+        };
 
         // Слой персонажей (герой и монстры).
         this.charLayer = new collie.Layer({

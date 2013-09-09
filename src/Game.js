@@ -13,6 +13,11 @@ var Game = {
     LoseEvent : undefined,
 
     /**
+     * Делегат. Срабатывает по окончанию хода.
+     */
+    EndTurnEvent : undefined,
+
+    /**
      * Флаг обозначающий, что игра окончена.
      */
     gameOver : false,
@@ -300,6 +305,9 @@ var Game = {
      */
     EndTurn : function() {
         this.animating = false;
+
+        if(this.EndTurnEvent)
+            this.EndTurnEvent();
     },
 
     Win : function() {
