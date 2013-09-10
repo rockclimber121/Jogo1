@@ -81,6 +81,8 @@ var Game = {
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == 1 && !currentCell.RightWall ||
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == -1 && !currentCell.LeftWall) {
 
+           var monsterInCell = cell.Unit instanceof Monster;
+
            // Для шага переназначаем значения ячеек.
            cell.Unit = this.hero;
            currentCell.Unit = undefined;
@@ -88,7 +90,7 @@ var Game = {
 
            // Перерисовываем поле, чтобы увидеть как сходит герой.
            GameWindow.Redraw(function() {
-               if(cell.Place instanceof Trap || cell.Unit instanceof Monster)
+               if(cell.Place instanceof Trap || monsterInCell)
                    Game.Lose(); // Если герой встал на ловушку, либо если герой встретился с врагом, тогда проигрыш.
                else if(cell.Place instanceof Home)
                    Game.Win(); // Если герой вошел в дом, то засчитываем победу.
