@@ -81,7 +81,11 @@ var Game = {
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == 1 && !currentCell.RightWall ||
            cell.Row - currentCell.Row == 0 && cell.Col - currentCell.Col == -1 && !currentCell.LeftWall) {
 
-           var monsterInCell = cell.Unit instanceof Monster;
+            // Если герой встал на ловушку, либо если герой встретился с врагом, тогда проигрыш.
+            var lose = (cell.Place instanceof Trap || cell.Unit instanceof Monster);
+
+            // Если герой вошел в дом, то засчитываем победу.
+            var win = (cell.Place instanceof Home);
 
            // Для шага переназначаем значения ячеек.
            cell.Unit = this.hero;
@@ -90,12 +94,12 @@ var Game = {
 
            // Перерисовываем поле, чтобы увидеть как сходит герой.
            GameWindow.Redraw(function() {
-               if(cell.Place instanceof Trap || monsterInCell)
-                   Game.Lose(); // Если герой встал на ловушку, либо если герой встретился с врагом, тогда проигрыш.
-               else if(cell.Place instanceof Home)
-                   Game.Win(); // Если герой вошел в дом, то засчитываем победу.
+               if(lose)
+                   Game.Lose();
+               else if(win)
+                   Game.Win();
                else
-                   Game.MoveMonsters(); // Передвигаем монстров.
+                   Game.MoveMonsters();
            });
         }
         else {
@@ -224,8 +228,7 @@ var Game = {
                     Game.monsters.splice(monstersForDelete[i], 1);
             }
 
-            if(!lose && !turnComplete)
-            {
+            if(!lose && !turnComplete) {
                 Game.DoOneStepForMonsters(onSuccess);
             } else {
                 if(onSuccess)
