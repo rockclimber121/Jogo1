@@ -118,9 +118,21 @@ var GameWindow = {
             var x = cell.X + (cell.Width - obj.get('width')) / 2,
                 y = cell.Y + (cell.Height - obj.get('height')) / 2;
 
+            // Звук перемещения персонажа.
+            var walkSndFile = (unit instanceof Hero ? 'sounds/hero_walk.mp3' : 'sounds/monster_walk.mp3');
+            if(!this.music[walkSndFile]) {
+                var snd = new Audio(walkSndFile);
+                snd.loop = true;
+                this.music[walkSndFile] = snd;
+            }
+
+            var walkSnd = this.music[walkSndFile];
+            walkSnd.play();
+
             // Анимированное перемещение персонажа.
             var context = this;
             obj.move(x, y, 100, function () {
+                walkSnd.pause();
                 objAnimation.stop();
                 obj.set('animation', null);
                 obj.set('spriteX', 0);
@@ -412,6 +424,10 @@ var GameWindow = {
                 mousedown : function (e) {
                     if(cellObj.get('spriteX'))
                         cellObj.set('spriteX', 2);
+
+                    var clickSnd = new Audio('sounds/click.mp3');
+                    clickSnd.volume = 0.3;
+                    clickSnd.play();
                 },
                 mouseup : function (e) {
                     if(cellObj.get('spriteX'))
