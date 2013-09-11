@@ -24,8 +24,11 @@
         $(document).ready(function(){
             // Инициализируем уровень.
             GameWindow.Init('GameField');
-            GameWindow.RegisterLevelChoosingControl("LevelChoosingLabel",
-                    "LevelChoosingControl", "LevelChoosingButton");
+            setTimeout(function() {
+                GameWindow.RegisterLevelChoosingControl("LevelChoosingLabel",
+                        "LevelChoosingControl", "LevelChoosingButton");
+                GameWindow.LoadCookies();
+            }, 500);
         });
 	</script>
 </body>
