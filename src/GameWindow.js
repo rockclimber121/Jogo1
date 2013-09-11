@@ -44,7 +44,8 @@ var GameWindow = {
         wall: "images/wall.png", // Стена (препятствие).
         decor: "images/decor.png", // Прочие декорации.
         heroBeaten: "images/heroBeaten.png", // "Драка" героя и врага - проигрыш.
-        heroTrapped: "images/heroTrapped.png" // Герой оказался в ловушке (Trap) - проигрыш.
+        heroTrapped: "images/heroTrapped.png", // Герой оказался в ловушке (Trap) - проигрыш.
+        enemyCombining: "images/enemyCombining.png" // Эффект при объединении монстров.
     },
 
     /**
@@ -58,6 +59,38 @@ var GameWindow = {
      *                             Вызывается после завершения последней анимации.
      */
     Redraw : function(onSuccess) {
+
+        // Объединение монстров.
+        var combineMonsters = function(cell, deletedUnitObj) {
+
+            // Звук объединения монстров.
+            var snd = new Audio("sounds/monster_combine.mp3");
+            snd.play();
+
+            // Объект для отображения эффекта объединения монстров.
+            var combineObj = new collie.DisplayObject({
+                x: cell.X,
+                y: cell.Y,
+                width: cell.Width,
+                height: cell.Height,
+                backgroundImage: 'enemyCombining'
+            });
+            combineObj.addTo(GameWindow.charLayer);
+
+            // Воспроизведение анимации объединения монстров.
+            collie.Timer.cycle(combineObj, "25fps", {
+                from : 0,
+                to : 5,
+                loop : 1,
+                set : "spriteX",
+                onComplete : function () {
+                    GameWindow.charLayer.removeChild(combineObj);
+                }
+            });
+
+            // Удаляем объект монстра, который был объединен с другим.
+            GameWindow.charLayer.removeChild(deletedUnitObj);
+        };
 
         // Обновить объект в ячейке.
         var updateObject = function(imgName, unit) {
@@ -78,7 +111,18 @@ var GameWindow = {
             obj.set('prevCell', $.extend({}, cell));
 
             if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
-                obj.setImage(imgName);
+                if(unit.deleted) {
+                    if(onSuccess) {
+                        var func = onSuccess;
+                        onSuccess = function() {
+                            combineMonsters(cell, obj);
+                            func();
+                        };
+                    }
+                }
+                else {
+                    obj.setImage(imgName);
+                }
 
                 if(--animationQueue === 0 && onSuccess)
                     onSuccess();
@@ -130,7 +174,6 @@ var GameWindow = {
             walkSnd.play();
 
             // Анимированное перемещение персонажа.
-            var context = this;
             obj.move(x, y, 100, function () {
                 walkSnd.pause();
                 objAnimation.stop();
@@ -138,7 +181,7 @@ var GameWindow = {
                 obj.set('spriteX', 0);
 
                 if (unit.deleted)
-                    context.charLayer.removeChild(obj);
+                    combineMonsters(cell, obj);
                 else
                     obj.setImage(imgName);
 

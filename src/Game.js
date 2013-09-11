@@ -187,10 +187,11 @@ var Game = {
                     nextCell.MonsterPower = 3;
                     monster.SetPower(3);
 
-                    var anotherMonster = this.monsters[getMonsterIndexByPosition(nextCell)];
+                    var anotherMonsterIndex = getMonsterIndexByPosition(nextCell);
+                    var anotherMonster = this.monsters[anotherMonsterIndex];
                     anotherMonster.SetPower(3);
 
-                    monstersForDelete.push(i);
+                    monstersForDelete.push(anotherMonsterIndex);
                 } else {
                     if(nextCell.Unit instanceof Hero){
                         // Пользователь проиграл, когда монстр попал в клетку с героем.
