@@ -271,8 +271,6 @@ var GameWindow = {
                     alert('The End');
             }, 2500);
         };
-
-        this.LoadCookies();
     },
 
     /**
@@ -291,7 +289,7 @@ var GameWindow = {
         button.onclick = function() {
             var value = controlChoosingLevel.val() - 0;
 
-            if(value > 0 && value <= GameWindow.Levels.length)
+            if(value > 0 && value <= GameWindow.MaxLevelNumber)
                 GameWindow.LoadLevel(value - 1);
         };
     },
@@ -547,6 +545,9 @@ var GameWindow = {
      */
     LoadLevel : function(levelNumber) {
 
+        if (levelNumber + 1 > this.MaxLevelNumber)
+            this.MaxLevelNumber = levelNumber + 1;
+
         // Зачищаем объекты в игре.
         Game.hero = undefined;
         Game.monsters = [];
@@ -581,8 +582,9 @@ var GameWindow = {
      */
     SaveCookies : function(){
         $.cookie.json = true;
-        $.cookie('c', {
-            currentLevel : GameWindow.CurrentLevel.Number
+        $.cookie('Jogo', {
+            currentLevel : GameWindow.CurrentLevel.Number,
+            maxLevel : GameWindow.MaxLevelNumber
         }, { expires : 365 });
     },
 
@@ -591,9 +593,10 @@ var GameWindow = {
      */
     LoadCookies : function(){
         $.cookie.json = true;
-        var cookies = $.cookie("c");
+        var cookies = $.cookie("Jogo");
 
         if(cookies){
+            this.MaxLevelNumber = cookies.maxLevel;
             this.LoadLevel(cookies.currentLevel);
         }
     }
