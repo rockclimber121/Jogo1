@@ -64,7 +64,7 @@ var Game = {
 
     /**
      * Проверяет можно ли сделать шаг в указанную клетку и совершает его.
-     * @param {object} cell Ячейка в которую хочет сходить пользователь.
+     * @param {object} cell Ячейка, в которую хочет сходить пользователь.
      */
     TryDoStep : function(cell) {
         var currentCell = Game.hero.CurrentPosition;
