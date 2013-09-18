@@ -128,7 +128,16 @@ var Game = {
         // Получить индекс монстра в массиве, который стоит на указаной позиции.
         var getMonsterIndexByPosition = function(positionCell) {
             for(var i = 0; i < Game.monsters.length; i++) {
-                if(Game.monsters[i].CurrentPosition == positionCell)
+                var deleted = false;
+                for(var j = 0; j < monstersForDelete.length; j++) {
+                    if(monstersForDelete[j] === i) {
+                        deleted = true;
+                        break;
+                    }
+                }
+
+                if(!deleted && Game.monsters[i].CurrentPosition.Col == positionCell.Col &&
+                    Game.monsters[i].CurrentPosition.Row == positionCell.Row)
                     return i;
             }
 
@@ -148,7 +157,7 @@ var Game = {
         var lose = false;
 
         // Перебираем всех монстров и пытаемся сделать ход.
-        for(i = 0; i < this.monsters.length; i++) {
+        for(var i = 0; i < this.monsters.length; i++) {
             var monster = this.monsters[i];
 
             var nextCell = Game.GetNextCellForMonster(monster);
@@ -186,6 +195,8 @@ var Game = {
                 if (nextCell.Unit instanceof Monster) {
                     nextCell.MonsterPower = 3;
                     monster.SetPower(3);
+                    monster.Steps = 0;
+                    monster.SkipTurns = 0;
 
                     var anotherMonsterIndex = getMonsterIndexByPosition(nextCell);
                     var anotherMonster = this.monsters[anotherMonsterIndex];
@@ -216,7 +227,7 @@ var Game = {
         // Отметим лишних монстров - это нужно, если они соеденились.
         // После перерисовки игрового поля их нужно будет удалить.
         monstersForDelete.sort(function(a, b){ return b-a; });
-        for(var i = 0; i < monstersForDelete.length; i++){
+        for(i = 0; i < monstersForDelete.length; i++){
             // Проверяем, чтобы не было совпадений, а то удалятся нужные монстры.
             if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
                 this.monsters[monstersForDelete[i]].deleted = true;
@@ -224,7 +235,7 @@ var Game = {
 
         var stepComplete = function () {
             // Удаляем лишних монстров, они нам больше не нужны.
-            for(var i = 0; i < monstersForDelete.length; i++) {
+            for(i = 0; i < monstersForDelete.length; i++) {
                 if(i == 0 || monstersForDelete[i] != monstersForDelete[i - 1])
                     Game.monsters.splice(monstersForDelete[i], 1);
             }
