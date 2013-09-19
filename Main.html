@@ -10,15 +10,16 @@
     <link rel="stylesheet" type="text/css" href="styles/Main.css">
 </head>
 <body>
-    <div id="LevelsBlock" class="LevelsBlock">
-        <span id="LevelChoosingLabel"></span>
-        <input id="LevelChoosingControl" class="LineControl">
-        <input id="LevelChoosingButton" class="LineControl" type="button" value="GO" title="Go to level by number"/>
+    <div id="GameBlock" class="GameBlock">
+        <div id="GameField" class="GameField MainBlock"></div>
+        <div id="GamePanel" class="GamePanel MainBlock">
+            <span id="LevelChoosingLabel"></span>
+            <input id="LevelChoosingControl"/>
+            <input id="LevelChoosingButton" class="LineControl" type="button" value="GO" title="Go to level by number"/>
+        </div>
     </div>
 
-    <div id="GameBlock" class="GameBlock">
-        <div id="GameField" class="GameField" />
-    </div>
+
 
 	<script LANGUAGE="javascript">
         $(document).ready(function(){

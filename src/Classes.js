@@ -62,13 +62,9 @@ function Monster(cell) {
  * @param {Number} power сила монстра, которую необходимо проставить.
  */
 Monster.prototype.SetPower = function(power) {
-    // Если монстр набирает силу больше двух, то его не остановить в ловушке.
-    this.SkipTurnsEnabled = power <= 2;
-
-    // Если монстр стал сильней, то он теряет ходы и выходит из ловушки, если в ней стоял.
-    if(power > this.Power) {
-        this.Steps = 0;
-        this.SkipTurns = 0;
+    if(this.Power < 3) {
+        // Если монстр набирает силу больше двух, то его не остановить в ловушке.
+        this.SkipTurnsEnabled = false;
     }
 
     this.Power = power;

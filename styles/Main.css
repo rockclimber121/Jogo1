@@ -1,31 +1,29 @@
-.LevelsBlock {
-    background-color: #86baa5;
-    width: 100px;
-    display: inline-block;
-    height: 600px;
-    position: absolute;
-    margin-left: 0;
-    margin-top: 10;
-}
-
-.GameBlock,
 .GameField {
-    width: 800px;
+    width: 600px;
     height: 600px;
 }
 
-.GameBlock {
-    background-color: #17d43d;
-    position: absolute;
-    margin-left: 110px;
-    margin-top: 10;
+.GamePanel {
+    margin: 0 0 0 0;
+    width: 200px;
+    height: 600px;
+    background-image: url("../images/background.png");
+    background: repeat-x repeat-y;
 }
 
-.LevelLink{
-    display: block;
+.MainBlock {
+    margin: 0 0 0 0;
+    display: inline-block;
+    float: left;
 }
 
-.LineControl {
-    width: 90%;
-    margin-left: 5%;
+.LevelControl {
+    width: 100%;
+    height: 50%;
 }
+
+.ConfigureSoundButton {
+    height: 16px;
+    width:16px;
+}
+
