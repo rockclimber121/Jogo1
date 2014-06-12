@@ -39,19 +39,17 @@ var Game = {
 
     /**
      * Инициализирует игру. Создание подписчиков на события.
-     * @param canvasId Идентификатор полотна для отрисовки уровня.
+     * @param {Object} gameField DOM-объект игрового поля.
      */
-    Init : function(canvasId) {
-        // Подписываемся на событие клика по полотну, чтобы определять куда хочет сходить пользователь.
-        var canvas = document.getElementById(canvasId);
-
-        canvas.addEventListener('click', function(event) {
+    Init: function (gameField) {
+        // Подписываемся на событие клика по полотну, чтобы определять, куда хочет сходить пользователь.
+        gameField.addEventListener('click', function (event) {
             if(Game.gameOver || Game.animating)
                 return;
 
             Game.animating = true;
 
-            var rect = canvas.getBoundingClientRect();
+            var rect = gameField.getBoundingClientRect();
             var cell = GameWindow.CurrentLevel.GetCellByCoordinates(event.pageX - rect.left, event.pageY - rect.top);
 
             if(cell)

@@ -4,9 +4,9 @@
 var GameWindow = {
 
     /**
-     * Полотно для отрисовки игрового поля.
+     * Объект DOM, содержащий игровое поле.
      */
-    canvas : undefined,
+    gameField: undefined,
 
     /**
      * Все уровни игры в первоначальном формате.
@@ -77,18 +77,36 @@ var GameWindow = {
     },
 
     /**
-     * Отобразить окно с игровым полем.
-     * @param {string} canvasId идентификатор полотна для отрисовки окна
+     * Отобразить игровое поле.
+     * @param {Object|string} container Контейнер или идентификатор контейнера в DOM для игрового поля. 
      */
-    Init: function (canvasId) {
+    Init: function (container) {
+        if (typeof container === 'string')
+            container = document.getElementById(container);
+
+        if (!container)
+            throw 'container is undefined';
+
+        var gameContainer = document.createElement('div');
+        gameContainer.id = 'JogoGameContainer';
+        container.appendChild(gameContainer);
+
+        var gameBlock = document.createElement('div');
+        gameBlock.id = 'JogoGameBlock';
+        gameContainer.appendChild(gameBlock);
+
+        var gameField = document.createElement('div');
+        gameField.id = 'JogoGameField';
+        gameBlock.appendChild(gameField);
+        this.gameField = gameField;
+
         this.Levels = Levels.GetAllLevels();
-        this.canvas = document.getElementById(canvasId);
 
         // Загружаем графические ресурсы.
         collie.ImageManager.add(this.imageResources, function () {
             // Графические ресурсы загружены.
 
-            Game.Init(canvasId);
+            Game.Init(gameField);
 
             Game.LoseEvent = function () {
                 setTimeout(function () {
@@ -117,7 +135,7 @@ var GameWindow = {
      */
     InitControls: function () {
         var controlsLayer = this.controlsLayer = new collie.Layer({
-            width: this.canvas.offsetWidth,
+            width: this.gameField.offsetWidth,
             height: 100,
             x: 0,
             y: 0
@@ -283,7 +301,7 @@ var GameWindow = {
             //// backgroundRepeat : "repeat"
         }).addTo(this.bkgdLayer);
 
-        renderer.load(this.canvas);
+        renderer.load(this.gameField);
         renderer.start();
 
         for(var i = 0; i < this.CurrentLevel.Cells.length; i++) {
@@ -340,7 +358,7 @@ var GameWindow = {
         Game.gameOver = false;
 
         // Пересоздаем уровень игры.
-        var fieldSize = { width: this.canvas.offsetWidth, height: this.canvas.offsetHeight };
+        var fieldSize = { width: this.gameField.offsetWidth, height: this.gameField.offsetHeight };
         this.CurrentLevel = new Level(this.Levels[levelNumber], levelNumber, fieldSize);
 
         // Музыкальное сопровождение - фоновая музыка.

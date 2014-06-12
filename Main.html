@@ -7,15 +7,6 @@
     <script type="text/javascript" src="src/Game.js"></script>
     <link rel="stylesheet" type="text/css" href="styles/Main.css">
 </head>
-<body>
-    <div id="GameContainer">
-        <div id="GameBlock">
-            <div id="GameField"></div>
-        </div>
-    </div>
-
-	<script LANGUAGE="javascript">
-        // Инициализируем уровень.
-        GameWindow.Init('GameField');
-	</script>
+<body onload="GameWindow.Init('Game')">
+    <div id="Game"></div>
 </body>
