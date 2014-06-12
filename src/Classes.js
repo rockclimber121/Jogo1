@@ -1,4 +1,9 @@
 /**
+ * Глобальный объект игры Jogo.
+ */
+Jogo = window.Jogo || {};
+
+/**
  * Ячейка матрицы на игровом поле.
  * @param {number} x позиция ячейки по горизонтали.
  * @param {number} y позиция ячейки по вертикали.
@@ -6,7 +11,7 @@
  * @param {number} col номер столбца в котором расположена ячейка.
  * @constructor
  */
-function Cell(x, y, row, col) {
+Jogo.Cell = function(x, y, row, col) {
     this.X = x;               // Координате по горизонтали.
     this.Y = y;               // Координата по вертикали.
     this.Width = 50;          // Ширина.
@@ -25,7 +30,7 @@ function Cell(x, y, row, col) {
  * Класс для создания экземпляра дома.
  * @param {Cell} cell ячейка в которой находится дом.
  */
-function Home(cell) {
+Jogo.Home = function(cell) {
     this.CurrentPosition = cell;
 }
 
@@ -33,7 +38,7 @@ function Home(cell) {
  * Класс для создания экземпляра ловушки.
  * @param {Cell} cell ячейка в которой находится ловушка.
  */
-function Trap(cell) {
+Jogo.Trap = function(cell) {
     this.CurrentPosition = cell;
 }
 
@@ -41,7 +46,7 @@ function Trap(cell) {
  * Класс для создания экземпляра героя.
  * @param {Cell} cell ячейка в которой изначально находится герой.
  */
-function Hero(cell) {
+Jogo.Hero = function(cell) {
     this.CurrentPosition = cell;
 }
 
@@ -49,7 +54,7 @@ function Hero(cell) {
  * Класс для создания экземпляра монстра.
  * @param {Cell} cell ячейка в которой изначально находится монстр.
  */
-function Monster(cell) {
+Jogo.Monster = function (cell) {
     this.CurrentPosition = cell;   // Текущая ячейка в которой находится монстр.
     this.Power = 2;                // Сила монстра которая определяет максимальное колличство шагов за раз.
     this.Steps = 2;                // Текущее количество оставшихся шагов.
@@ -61,7 +66,7 @@ function Monster(cell) {
  * Объявление не экземплярной функци проставления силы монстра.
  * @param {Number} power сила монстра, которую необходимо проставить.
  */
-Monster.prototype.SetPower = function(power) {
+Jogo.Monster.prototype.SetPower = function (power) {
     if(this.Power < 3) {
         // Если монстр набирает силу больше двух, то его не остановить в ловушке.
         this.SkipTurnsEnabled = false;

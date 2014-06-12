@@ -1,7 +1,7 @@
 /**
  * Окно игры. Отдельный фрейм с игровым полем. Содержит методы по работе с ним.
  */
-var GameWindow = {
+Jogo.GameWindow = {
 
     /**
      * Объект DOM, содержащий игровое поле.
@@ -64,16 +64,16 @@ var GameWindow = {
         var redrawSuccessInfo = {
             // Количество анимаций в очереди (hero + monsters).
             // Подсчитывается, чтобы вызвать onSuccess после завершения последней анимации.
-            animationQueue: 1 + Game.monsters.length,
+            animationQueue: 1 + Jogo.Game.monsters.length,
             onSuccess: function() {
                 if (onSuccess)
                     onSuccess();
             }
         };
 
-        this._drawUnit.call(this, Game.hero, redrawSuccessInfo);
-        for(var i = 0; i < Game.monsters.length; i++)
-            this._drawUnit.call(this, Game.monsters[i], redrawSuccessInfo);
+        this._drawUnit.call(this, Jogo.Game.hero, redrawSuccessInfo);
+        for (var i = 0; i < Jogo.Game.monsters.length; i++)
+            this._drawUnit.call(this, Jogo.Game.monsters[i], redrawSuccessInfo);
     },
 
     /**
@@ -100,33 +100,33 @@ var GameWindow = {
         gameBlock.appendChild(gameField);
         this.gameField = gameField;
 
-        this.Levels = Levels.GetAllLevels();
+        this.Levels = Jogo.Levels.GetAllLevels();
 
         // Загружаем графические ресурсы.
         collie.ImageManager.add(this.imageResources, function () {
             // Графические ресурсы загружены.
 
-            Game.Init(gameField);
+            Jogo.Game.Init(gameField);
 
-            Game.LoseEvent = function () {
+            Jogo.Game.LoseEvent = function () {
                 setTimeout(function () {
-                    GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
-                    Game.EndTurn();
+                    Jogo.GameWindow.LoadLevel(Jogo.GameWindow.CurrentLevel.Number);
+                    Jogo.Game.EndTurn();
                 }, 2500);
             };
 
-            Game.WinEvent = function () {
+            Jogo.Game.WinEvent = function () {
                 setTimeout(function () {
-                    var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
-                    if (numberNextLevel < GameWindow.Levels.length)
-                        GameWindow.LoadLevel(numberNextLevel);
+                    var numberNextLevel = Jogo.GameWindow.CurrentLevel.Number + 1;
+                    if (numberNextLevel < Jogo.GameWindow.Levels.length)
+                        Jogo.GameWindow.LoadLevel(numberNextLevel);
                     else
                         alert('The End');
                 }, 2500);
             };
 
-            GameWindow.InitControls();
-            GameWindow.LoadCookies();
+            Jogo.GameWindow.InitControls();
+            Jogo.GameWindow.LoadCookies();
         });
     },
 
@@ -154,47 +154,47 @@ var GameWindow = {
 
         // Перезапустить уровень.
         new collie.Circle({
-            x: controlX + 80,
-            y: controlY,
-            radius: 15,
-            backgroundImage: 'controls'
-        }).addTo(controlsLayer)
-          .attach({
-              click: function () {
-                GameWindow._playClickSound();
+                x: controlX + 80,
+                y: controlY,
+                radius: 15,
+                backgroundImage: 'controls'
+            }).addTo(controlsLayer)
+            .attach({
+                click: function() {
+                    Jogo.GameWindow._playClickSound();
 
-                // TODO: Баг, если монстр еще не завершил ход, то он сходит после перезапуска уровня.
-                GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
-              }
-          })
-          .set('spriteX', 0);
+                    // TODO: Баг, если монстр еще не завершил ход, то он сходит после перезапуска уровня.
+                    Jogo.GameWindow.LoadLevel(Jogo.GameWindow.CurrentLevel.Number);
+                }
+            })
+            .set('spriteX', 0);
 
         var music = this.music;
 
         // Отключить или включить звук в игре.
         new collie.Circle({
-            x: controlX + 120,
-            y: controlY,
-            radius: 15,
-            backgroundImage: 'controls'
-        }).addTo(controlsLayer)
-          .attach({
-              click: function (e) {
-                  GameWindow.isMusicMuted = !GameWindow.isMusicMuted;
-                  if (GameWindow.isMusicMuted) {
-                      e.displayObject.set('spriteX', 2);
-                      for (var key in music)
-                          music[key].pause();
-                  } else {
-                      GameWindow._playClickSound();
+                x: controlX + 120,
+                y: controlY,
+                radius: 15,
+                backgroundImage: 'controls'
+            }).addTo(controlsLayer)
+            .attach({
+                click: function(e) {
+                    Jogo.GameWindow.isMusicMuted = !Jogo.GameWindow.isMusicMuted;
+                    if (Jogo.GameWindow.isMusicMuted) {
+                        e.displayObject.set('spriteX', 2);
+                        for (var key in music)
+                            music[key].pause();
+                    } else {
+                        Jogo.GameWindow._playClickSound();
 
-                      e.displayObject.set('spriteX', 1);
-                      music.background.play();
-                      GameWindow._animateVolume(music.background, 0.2, 1500); // плавное увеличение громкости.
-                  }
-              }
-          })
-          .set('spriteX', GameWindow.isMusicMuted ? 2 : 1);
+                        e.displayObject.set('spriteX', 1);
+                        music.background.play();
+                        Jogo.GameWindow._animateVolume(music.background, 0.2, 1500); // плавное увеличение громкости.
+                    }
+                }
+            })
+            .set('spriteX', Jogo.GameWindow.isMusicMuted ? 2 : 1);
 
         var levelControlX = controlX + 160,
             levelControlY = controlY;
@@ -208,11 +208,11 @@ var GameWindow = {
         }).addTo(controlsLayer)
           .attach({
               click: function () {
-                  GameWindow._playClickSound();
+                  Jogo.GameWindow._playClickSound();
 
-                  var numberPrevLevel = GameWindow.CurrentLevel.Number - 1;
-                  if (numberPrevLevel >= 0 && numberPrevLevel <= GameWindow.MaxLevelNumber)
-                      GameWindow.LoadLevel(numberPrevLevel);
+                  var numberPrevLevel = Jogo.GameWindow.CurrentLevel.Number - 1;
+                  if (numberPrevLevel >= 0 && numberPrevLevel <= Jogo.GameWindow.MaxLevelNumber)
+                      Jogo.GameWindow.LoadLevel(numberPrevLevel);
               }
           })
           .set('spriteX', 3);
@@ -237,11 +237,11 @@ var GameWindow = {
         }).addTo(controlsLayer)
           .attach({
               click: function () {
-                  GameWindow._playClickSound();
+                  Jogo.GameWindow._playClickSound();
 
-                  var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
-                  if (numberNextLevel < GameWindow.Levels.length && numberNextLevel <= GameWindow.MaxLevelNumber)
-                      GameWindow.LoadLevel(numberNextLevel);
+                  var numberNextLevel = Jogo.GameWindow.CurrentLevel.Number + 1;
+                  if (numberNextLevel < Jogo.GameWindow.Levels.length && numberNextLevel <= Jogo.GameWindow.MaxLevelNumber)
+                      Jogo.GameWindow.LoadLevel(numberNextLevel);
               }
           })
           .set('spriteX', 4);
@@ -276,7 +276,7 @@ var GameWindow = {
             mousedown : saveLastMouseEvent,
             mouseup : saveLastMouseEvent
         });
-        Game.EndTurnEvent = function() {
+        Jogo.Game.EndTurnEvent = function () {
             // Обновление выделения ячейки под курсором после завершения хода.
             var lastMouseEvent = bkgdLayer.get('LastMouseEvent');
             bkgdLayer.fireEvent('mousemove', lastMouseEvent);
@@ -353,13 +353,13 @@ var GameWindow = {
             this.MaxLevelNumber = levelNumber;
 
         // Зачищаем объекты в игре.
-        Game.hero = undefined;
-        Game.monsters = [];
-        Game.gameOver = false;
+        Jogo.Game.hero = undefined;
+        Jogo.Game.monsters = [];
+        Jogo.Game.gameOver = false;
 
         // Пересоздаем уровень игры.
         var fieldSize = { width: this.gameField.offsetWidth, height: this.gameField.offsetHeight };
-        this.CurrentLevel = new Level(this.Levels[levelNumber], levelNumber, fieldSize);
+        this.CurrentLevel = new Jogo.Level(this.Levels[levelNumber], levelNumber, fieldSize);
 
         // Музыкальное сопровождение - фоновая музыка.
         var backMusic = this.music.background;
@@ -450,7 +450,7 @@ var GameWindow = {
             loop : 1,
             set : "spriteX",
             onComplete : function () {
-                GameWindow.charLayer.removeChild(combineObj);
+                Jogo.GameWindow.charLayer.removeChild(combineObj);
             }
         });
 
@@ -480,13 +480,13 @@ var GameWindow = {
 
         var cell = unit.CurrentPosition;
         var prevCell = obj.get('prevCell');
-        obj.set('prevCell', GameWindow._extend({}, cell));
+        obj.set('prevCell', Jogo.GameWindow._extend({}, cell));
 
         if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
             if (unit.deleted) {
                 var oldSuccessFunc = successInfo.onSuccess;
                 successInfo.onSuccess = function() {
-                    GameWindow._combineMonsters(cell, obj);
+                    Jogo.GameWindow._combineMonsters(cell, obj);
                     oldSuccessFunc();
                 };
             }
@@ -501,7 +501,7 @@ var GameWindow = {
         }
 
         var oldAnimation = obj.get('animation');
-        if(oldAnimation)
+        if (oldAnimation)
             oldAnimation.stop();
 
         // Поворот персонажа в зависимости от направления движения.
@@ -533,7 +533,7 @@ var GameWindow = {
             y = cell.Y + (cell.Height - obj.get('height')) / 2;
 
         // Звук перемещения персонажа.
-        var walkSndFile = (unit instanceof Hero ? 'sounds/hero_walk.mp3' : 'sounds/monster_walk.mp3');
+        var walkSndFile = (unit instanceof Jogo.Hero ? 'sounds/hero_walk.mp3' : 'sounds/monster_walk.mp3');
         if(!this.music[walkSndFile]) {
             var snd = new Audio(walkSndFile);
             snd.loop = true;
@@ -552,7 +552,7 @@ var GameWindow = {
             obj.set('spriteX', 0);
 
             if (unit.deleted)
-                GameWindow._combineMonsters(cell, obj);
+                Jogo.GameWindow._combineMonsters(cell, obj);
             else
                 obj.setImage(imgName);
 
@@ -560,7 +560,7 @@ var GameWindow = {
                 successInfo.onSuccess();
         });
 
-        if(unit instanceof Hero && cell.Place instanceof Home) {
+        if (unit instanceof Jogo.Hero && cell.Place instanceof Jogo.Home) {
             // Герой дошел до дома и выиграл.
             // Эффект "исчезание", когда герой двигается к дому.
             collie.Timer.transition(obj, 400, {
@@ -574,17 +574,17 @@ var GameWindow = {
             if (!this.isMusicMuted)
                 snd.play();
         }
-        else if(unit instanceof Hero || unit instanceof Monster) {
+        else if (unit instanceof Jogo.Hero || unit instanceof Jogo.Monster) {
             var lose;
 
             // Проверим, встретились ли герой и монстр (проигрыш).
             // Если встретились, то отобразим клубы дыма над ними, типо драка.
-            if(unit instanceof Monster && unit.CurrentPosition == Game.hero.CurrentPosition) {
+            if (unit instanceof Jogo.Monster && unit.CurrentPosition == Jogo.Game.hero.CurrentPosition) {
                 lose = 'heroBeaten';
             }
-            else if(unit instanceof Hero) {
-                for(var i = 0; i < Game.monsters.length; i++) {
-                    if(unit.CurrentPosition == Game.monsters[i].CurrentPosition){
+            else if (unit instanceof Jogo.Hero) {
+                for (var i = 0; i < Jogo.Game.monsters.length; i++) {
+                    if (unit.CurrentPosition == Jogo.Game.monsters[i].CurrentPosition) {
                         lose = 'heroBeaten';
                         break;
                     }
@@ -593,7 +593,7 @@ var GameWindow = {
 
             // Проверим, не попал ли герой в ловушку (проигрыш).
             // Если так, то отобразим клубы огня над героем.
-            if(!lose && Game.hero.CurrentPosition.Place instanceof Trap)
+            if (!lose && Jogo.Game.hero.CurrentPosition.Place instanceof Jogo.Trap)
                 lose = 'heroTrapped';
 
             if(lose) {
@@ -647,11 +647,11 @@ var GameWindow = {
      * @private
      */
     _drawUnit : function(unit, successInfo) {
-        if(unit instanceof Hero){
+        if (unit instanceof Jogo.Hero) {
             this._updateObject.call(this, 'hero', unit, successInfo);
         }
-        else if(unit instanceof Monster){
-            switch(unit.Power) {
+        else if (unit instanceof Jogo.Monster) {
+            switch (unit.Power) {
                 case 2:
                     // рисуем монстра с силой 1.
                     var imgName = (unit.SkipTurns <= 1) ? 'enemy' : 'trappedEnemy';
@@ -692,7 +692,7 @@ var GameWindow = {
 
         if(unit) {
             obj.set('unit', unit); // связанный с объектом collie персонаж игры.
-            obj.set('prevCell', GameWindow._extend({}, unit.CurrentPosition)); // запомним позицию.
+            obj.set('prevCell', Jogo.GameWindow._extend({}, unit.CurrentPosition)); // запомним позицию.
         }
 
         obj.addTo(unit ? this.charLayer : this.bkgdLayer);
@@ -723,7 +723,7 @@ var GameWindow = {
                 // true, если объект находится под точкой [e.x, e.y].
                 var cellHit = collie.LayerEvent.prototype._isPointInDisplayObjectBoundary(cellObj, e.x, e.y);
 
-                var heroCell = Game.hero.CurrentPosition,
+                var heroCell = Jogo.Game.hero.CurrentPosition,
                     colDistance = Math.abs(heroCell.Col - cell.Col),
                     rowDistance = Math.abs(heroCell.Row - cell.Row);
 
@@ -731,7 +731,7 @@ var GameWindow = {
                 var nearHero = (colDistance + rowDistance === 1);
 
                 var spriteX;
-                if(Game.animating || Game.gameOver)
+                if (Jogo.Game.animating || Jogo.Game.gameOver)
                     spriteX = 0;
                 else if(cellHit && nearHero)
                     spriteX = e.event.which ? 2 : 1;
@@ -748,7 +748,7 @@ var GameWindow = {
                 if(cellObj.get('spriteX'))
                     cellObj.set('spriteX', 2);
 
-                GameWindow._playClickSound();
+                Jogo.GameWindow._playClickSound();
             },
             mouseup : function (e) {
                 if(cellObj.get('spriteX'))
@@ -759,9 +759,9 @@ var GameWindow = {
         // Нанесение декораций внутри ячейки.
         // Берем случайное число из интервала 1..20.
         // Вероятность наличия декорации в ячейке - decorSpritesCount\20
-        var decorNumber = Math.floor((Math.random()*20)+1);
+        var decorNumber = Math.floor((Math.random() * 20) + 1);
         var decorSpritesCount = 6; // количество спрайтов в изображении.
-        if(decorNumber < decorSpritesCount) {
+        if (decorNumber < decorSpritesCount) {
             var decorObj = new collie.Rectangle({
                 width: cell.Width,
                 height: cell.Height,
@@ -807,7 +807,7 @@ var GameWindow = {
         }
 
         // Рендеринг основного содержимого ячейки.
-        if(cell.Place instanceof Trap) {
+        if (cell.Place instanceof Jogo.Trap) {
             var obj = this._displayObject.call(this, cell, 'trap', null, 32, 50);
             collie.Timer.cycle(obj, "14fps", {
                 from : 0,
@@ -816,14 +816,14 @@ var GameWindow = {
                 set : "spriteX"
             });
         }
-        else if(cell.Place instanceof Home)
+        else if (cell.Place instanceof Jogo.Home)
             this._displayObject.call(this, cell, 'house');
 
-        if(cell.Unit instanceof Hero){
+        if (cell.Unit instanceof Jogo.Hero) {
             this._displayObject.call(this, cell, 'hero', cell.Unit, 32, 32);
         }
-        else if(cell.Unit instanceof Monster){
-            switch(cell.Unit.Power) {
+        else if (cell.Unit instanceof Jogo.Monster) {
+            switch (cell.Unit.Power) {
                 case 2:
                     // рисуем монстра с силой 1.
                     var imgName = (cell.Unit.SkipTurns == 0) ? 'enemy' : 'trappedEnemy';
@@ -900,4 +900,12 @@ var GameWindow = {
         clickSnd.volume = 0.3;
         clickSnd.play();
     }
+};
+
+/**
+ * Отобразить игровое поле.
+ * @param {Object|string} container Контейнер или идентификатор контейнера в DOM для игрового поля. 
+ */
+Jogo.Init = function(container) {
+    Jogo.GameWindow.Init(container);
 };

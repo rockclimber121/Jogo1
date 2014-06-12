@@ -5,13 +5,13 @@
  * @param fieldSize размер поля, необходим для проставления позиций ячеек.
  * @constructor
  */
-function Level(level, number, fieldSize) {
+Jogo.Level = function(level, number, fieldSize) {
     this.Number = number;            // Номер уровня.
     this.Cells = [];                 // Матрица ячеек игрового поля.
     this.CellOuterHome = undefined;  // Ячейка дома, если он находится вне поля.
 
-    var home = level["home"];
-    var field = level["field"];
+    var home = level['home'];
+    var field = level['field'];
 
     var center = { X: fieldSize.width/2, Y: fieldSize.height/2 };
     var countCellsInCol = (field.length + 1)/2;
@@ -23,46 +23,53 @@ function Level(level, number, fieldSize) {
         for(var j = 0; j < countCellsInRow; j++) {
             var value = field[i*2][j*2];
 
-            var newCell = new Cell(center.X + (j - (countCellsInRow/2|0)) * this.DefaultCellSize,
+            var newCell = new Jogo.Cell(center.X + (j - (countCellsInRow/2|0)) * this.DefaultCellSize,
                 center.Y + (i - (countCellsInCol/2|0)) * this.DefaultCellSize,
                 i, j);
 
             // Указываем что находится в ячейке.
             switch (value) {
-                case Levels.Trap:
-                    newCell.Place = new Trap(newCell);
+                case Jogo.Levels.Trap:
+                    newCell.Place = new Jogo.Trap(newCell);
                     break;
-                case Levels.Home:
-                    newCell.Place = new Home(newCell);
+
+                case Jogo.Levels.Home:
+                    newCell.Place = new Jogo.Home(newCell);
                     break;
-                case Levels.Hero:
-                    newCell.Unit = new Hero(newCell);
-                    Game.hero = newCell.Unit;
+
+                case Jogo.Levels.Hero:
+                    newCell.Unit = new Jogo.Hero(newCell);
+                    Jogo.Game.hero = newCell.Unit;
                     break;
-                case Levels.Monster:
-                    newCell.Unit = new Monster(newCell);
-                    Game.monsters.push(newCell.Unit);
+
+                case Jogo.Levels.Monster:
+                    newCell.Unit = new Jogo.Monster(newCell);
+                    Jogo.Game.monsters.push(newCell.Unit);
                     break;
-                case Levels.MonsterOnTrap:
-                    newCell.Unit = new Monster(newCell);
-                    newCell.Place = new Trap(newCell);
-                    Game.monsters.push(newCell.Unit);
+
+                case Jogo.Levels.MonsterOnTrap:
+                    newCell.Unit = new Jogo.Monster(newCell);
+                    newCell.Place = new Jogo.Trap(newCell);
+                    Jogo.Game.monsters.push(newCell.Unit);
                     break;
-                case Levels.MonsterOnHome:
-                    newCell.Unit = new Monster(newCell);
-                    newCell.Place = new Home(newCell);
-                    Game.monsters.push(newCell.Unit);
+
+                case Jogo.Levels.MonsterOnHome:
+                    newCell.Unit = new Jogo.Monster(newCell);
+                    newCell.Place = new Jogo.Home(newCell);
+                    Jogo.Game.monsters.push(newCell.Unit);
                     break;
+
                 default:
-                // Пустая ячейка. Ничего не указываем.
+                    // Пустая ячейка. Ничего не указываем.
+                    break;
             }
 
             // Если ячеек в строке нечетное количество, то сдвигаем на пол ячейки по горизонтали.
-            if(countCellsInRow%2 == 1)
+            if (countCellsInRow%2 == 1)
                 newCell.X -= this.DefaultCellSize/2;
 
             // Если ячеек в столбце нечетное количество, то сдвигаем на пол ячейки по вертикали.
-            if(countCellsInCol)
+            if (countCellsInCol)
                 newCell.Y -= this.DefaultCellSize/2;
 
             this.Cells[i][j] = newCell;
@@ -70,7 +77,7 @@ function Level(level, number, fieldSize) {
     }
 
     // Если дом вне поля, то запоминаем это.
-    if(home[0] < 0 || home[1] < 0 || home[0] >= countCellsInCol || home[1] >= countCellsInRow) {
+    if (home[0] < 0 || home[1] < 0 || home[0] >= countCellsInCol || home[1] >= countCellsInRow) {
         var x, y;
 
         if(home[1] < 0)
@@ -87,27 +94,27 @@ function Level(level, number, fieldSize) {
         else
             y = this.Cells[0][0].Y + home[0] * this.DefaultCellSize;
 
-        this.CellOuterHome = new Cell(x, y, home[0], home[1]);
-        this.CellOuterHome.Place = new Home(this.CellOuterHome);
+        this.CellOuterHome = new Jogo.Cell(x, y, home[0], home[1]);
+        this.CellOuterHome.Place = new Jogo.Home(this.CellOuterHome);
     }
 
     // Шаг 2. Актуализируем стенки в ячейках.
-    for(i = 0; i < field.length; i++) {
-        for(j = 0; j < field[i].length; j++) {
+    for (i = 0; i < field.length; i++) {
+        for (j = 0; j < field[i].length; j++) {
             // Если это нечетная строчка, то стенки на четных позициях.
             // Если четная строчка, то стенки на нечетных позициях.
             // Проверка при делении по модулю 2 перевернута из-за того что индексы идут с 0.
 
-            if(i%2 == 0 && j%2 == 1 && field[i][j] == 1) {
+            if (i%2 == 0 && j%2 == 1 && field[i][j] == 1) {
                 this.Cells[i/2][j/2 - 1/2].RightWall = true;
 
-                if(j != field[i].length - 1)
+                if (j != field[i].length - 1)
                     this.Cells[i/2][j/2 + 1/2].LeftWall = true;
             }
-            else if(i%2 == 1 && j%2 == 0 && field[i][j] == 1) {
+            else if (i%2 == 1 && j%2 == 0 && field[i][j] == 1) {
                 this.Cells[i/2 - 1/2][j/2].BottomWall = true;
 
-                if(i != field.length - 1)
+                if (i != field.length - 1)
                     this.Cells[i/2 + 1/2][j/2].TopWall = true;
             }
         }
@@ -117,7 +124,7 @@ function Level(level, number, fieldSize) {
 /**
  * @type {number} Размер квадратной ячейки.
  */
-Level.prototype.DefaultCellSize = 50;
+Jogo.Level.prototype.DefaultCellSize = 50;
 
 /**
  * Возвращает объект ячейки из матрицы находящуюся по указанным координатам.
@@ -126,13 +133,13 @@ Level.prototype.DefaultCellSize = 50;
  * @returns {object|undefined} Ячейка из матрицы находящуюся по указанным координатам.
  * Если ячейка не будет найдена вернет undefined.
  */
-Level.prototype.GetCellByCoordinates = function(x, y) {
+Jogo.Level.prototype.GetCellByCoordinates = function (x, y) {
     // Сначала проверим не попали ли мы в дом, которыц вне матрицы.
-    if(this.CellOuterHome) {
+    if (this.CellOuterHome) {
         var deltaX = x - this.CellOuterHome.X;
         var deltaY = y - this.CellOuterHome.Y;
 
-        if(deltaX > 0 && deltaX <= this.DefaultCellSize && deltaY > 0 && deltaY <= this.DefaultCellSize)
+        if (deltaX > 0 && deltaX <= this.DefaultCellSize && deltaY > 0 && deltaY <= this.DefaultCellSize)
             return this.CellOuterHome;
     }
 
