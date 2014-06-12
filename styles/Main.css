@@ -1,29 +1,27 @@
-.GameField {
-    width: 600px;
-    height: 600px;
+#GameContainer {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    background: url("../images/background.png") repeat;
 }
 
-.GamePanel {
-    margin: 0 0 0 0;
-    width: 200px;
-    height: 600px;
-    background-image: url("../images/background.png");
-    background: repeat-x repeat-y;
+#GameBlock {
+    display: table;
+    margin: 0 auto;
 }
 
-.MainBlock {
+#GameField, #GamePanel {
     margin: 0 0 0 0;
     display: inline-block;
     float: left;
+    height: 600px;
 }
 
-.LevelControl {
-    width: 100%;
-    height: 50%;
+#GameField {
+    width: 600px;
 }
 
-.ConfigureSoundButton {
-    height: 16px;
-    width:16px;
+#GamePanel {
+    background: url("../images/background.png") repeat;
 }
-
