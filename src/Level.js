@@ -143,6 +143,6 @@ Level.prototype.GetCellByCoordinates = function(x, y) {
     var i = ((y - startY)/this.DefaultCellSize)|0;
     var j = ((x - startX)/this.DefaultCellSize)|0;
 
-    if(i < this.Cells.length && j < this.Cells[i].length)
+    if (i >= 0 && j >= 0 && i < this.Cells.length && j < this.Cells[i].length)
         return this.Cells[i][j];
 };
