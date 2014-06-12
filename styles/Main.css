@@ -11,17 +11,10 @@
     margin: 0 auto;
 }
 
-#GameField, #GamePanel {
+#GameField {
     margin: 0 0 0 0;
     display: inline-block;
     float: left;
     height: 600px;
-}
-
-#GameField {
     width: 600px;
-}
-
-#GamePanel {
-    background: url("../images/background.png") repeat;
 }

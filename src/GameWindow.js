@@ -4,11 +4,6 @@
 var GameWindow = {
 
     /**
-     * Контрол для отображения номера текущего уровня.
-     */
-    controlChoosingLevel : undefined,
-
-    /**
      * Полотно для отрисовки игрового поля.
      */
     canvas : undefined,
@@ -45,13 +40,19 @@ var GameWindow = {
         decor: "images/decor.png", // Прочие декорации.
         heroBeaten: "images/heroBeaten.png", // "Драка" героя и врага - проигрыш.
         heroTrapped: "images/heroTrapped.png", // Герой оказался в ловушке (Trap) - проигрыш.
-        enemyCombining: "images/enemyCombining.png" // Эффект при объединении монстров.
+        enemyCombining: "images/enemyCombining.png", // Эффект при объединении монстров.
+        controls: "images/controls.png" // Изображения кнопок на панели контролов игры.
     },
 
     /**
      * Звуки в игре.
      */
-    music : {},
+    music: {},
+
+    /**
+     * Отключены ли звуки в игре.
+     */
+    isMusicMuted: false,
 
     /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
@@ -78,11 +79,8 @@ var GameWindow = {
     /**
      * Отобразить окно с игровым полем.
      * @param {string} canvasId идентификатор полотна для отрисовки окна
-     * @param {string} labelId идентификатор контрола для заголовка.
-     * @param {string} controlId идентификатор контрола для ввода номера уровня.
-     * @param {string} buttonId идентификатор кнопки для перехода на новый уровень.
      */
-    Init: function (canvasId, labelId, controlId, buttonId) {
+    Init: function (canvasId) {
         this.Levels = Levels.GetAllLevels();
         this.canvas = document.getElementById(canvasId);
 
@@ -109,30 +107,126 @@ var GameWindow = {
                 }, 2500);
             };
 
-            GameWindow.RegisterLevelChoosingControl(labelId, controlId, buttonId);
+            GameWindow.InitControls();
             GameWindow.LoadCookies();
         });
     },
 
     /**
-     * Зарегистрировать обработчики для группы контролов отвечающих за выбор уровня.
-     * @param {string} labelId идентификатор контрола для заголовка.
-     * @param {string} controlId идентификатор контрола для ввода номера уровня.
-     * @param {string} buttonId идентификатор кнопки для перехода на новый уровень.
+     * Инициализировать панель контролов игры.
      */
-    RegisterLevelChoosingControl: function (labelId, controlId, buttonId) {
-        document.getElementById(labelId).textContent = "Level number of " + this.Levels.length;
+    InitControls: function () {
+        var controlsLayer = this.controlsLayer = new collie.Layer({
+            width: this.canvas.offsetWidth,
+            height: 100,
+            x: 0,
+            y: 0
+        });
 
-        var controlChoosingLevel = document.getElementById(controlId);
-        this.controlChoosingLevel = controlChoosingLevel;
-        var button = document.getElementById(buttonId);
+        var controlX = 100,
+            controlY = 5;
 
-        button.onclick = function() {
-            var value = controlChoosingLevel.value - 0;
+        new collie.Text({
+            x: controlX,
+            y: controlY - 4,
+            fontFamily: 'Arial',
+            fontSize: 30,
+            fontColor: "#ffffff"
+        }).text("Jogo").addTo(controlsLayer);
 
-            if(value > 0 && value <= GameWindow.MaxLevelNumber)
-                GameWindow.LoadLevel(value - 1);
-        };
+        // Перезапустить уровень.
+        new collie.Circle({
+            x: controlX + 80,
+            y: controlY,
+            radius: 15,
+            backgroundImage: 'controls'
+        }).addTo(controlsLayer)
+          .attach({
+              click: function () {
+                GameWindow._playClickSound();
+
+                // TODO: Баг, если монстр еще не завершил ход, то он сходит после перезапуска уровня.
+                GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
+              }
+          })
+          .set('spriteX', 0);
+
+        var music = this.music;
+
+        // Отключить или включить звук в игре.
+        new collie.Circle({
+            x: controlX + 120,
+            y: controlY,
+            radius: 15,
+            backgroundImage: 'controls'
+        }).addTo(controlsLayer)
+          .attach({
+              click: function (e) {
+                  GameWindow.isMusicMuted = !GameWindow.isMusicMuted;
+                  if (GameWindow.isMusicMuted) {
+                      e.displayObject.set('spriteX', 2);
+                      for (var key in music)
+                          music[key].pause();
+                  } else {
+                      GameWindow._playClickSound();
+
+                      e.displayObject.set('spriteX', 1);
+                      music.background.play();
+                      GameWindow._animateVolume(music.background, 0.2, 1500); // плавное увеличение громкости.
+                  }
+              }
+          })
+          .set('spriteX', GameWindow.isMusicMuted ? 2 : 1);
+
+        var levelControlX = controlX + 160,
+            levelControlY = controlY;
+
+        // Перейти на предыдущий уровень.
+        this.prevLevelButton = new collie.Circle({
+            x: levelControlX,
+            y: levelControlY,
+            radius: 15,
+            backgroundImage: 'controls'
+        }).addTo(controlsLayer)
+          .attach({
+              click: function () {
+                  GameWindow._playClickSound();
+
+                  var numberPrevLevel = GameWindow.CurrentLevel.Number - 1;
+                  if (numberPrevLevel >= 0 && numberPrevLevel <= GameWindow.MaxLevelNumber)
+                      GameWindow.LoadLevel(numberPrevLevel);
+              }
+          })
+          .set('spriteX', 3);
+
+        // Заголовок текущего уровня.
+        this.currentLevelLabel = new collie.Text({
+            x: this.prevLevelButton.get('x') + this.prevLevelButton.get('width'),
+            y: levelControlY + 3,
+            width: 170,
+            fontFamily: 'Arial',
+            fontSize: 20,
+            fontColor: "#ffffff",
+            textAlign: 'center'
+        }).addTo(controlsLayer);
+
+        // Перейти на следущий уровень.
+        this.nextLevelButton = new collie.Circle({
+            x: this.currentLevelLabel.get('x') + this.currentLevelLabel.get('width'),
+            y: levelControlY,
+            radius: 15,
+            backgroundImage: 'controls'
+        }).addTo(controlsLayer)
+          .attach({
+              click: function () {
+                  GameWindow._playClickSound();
+
+                  var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
+                  if (numberNextLevel < GameWindow.Levels.length && numberNextLevel <= GameWindow.MaxLevelNumber)
+                      GameWindow.LoadLevel(numberNextLevel);
+              }
+          })
+          .set('spriteX', 4);
     },
 
     /**
@@ -151,6 +245,8 @@ var GameWindow = {
             height : fieldSize.height
         });
         renderer.addLayer(this.bkgdLayer);
+
+        renderer.addLayer(this.controlsLayer);
 
         // Запомнить последние данные о событии мыши,
         // чтобы по окончанию хода обновить выделение ячейки под курсором.
@@ -181,8 +277,10 @@ var GameWindow = {
             y : 0,
             width : fieldSize.width,
             height: fieldSize.height,
-            backgroundImage : "background",
-            backgroundRepeat : "repeat"
+            //// Фон задан в css стиле элемента GameContainer.
+            //// Если фон контейнера и игрового поля совпадают, то здесь можно не указывать (будет прозрачным).
+            //// backgroundImage : "background",
+            //// backgroundRepeat : "repeat"
         }).addTo(this.bkgdLayer);
 
         renderer.load(this.canvas);
@@ -233,8 +331,8 @@ var GameWindow = {
      */
     LoadLevel : function(levelNumber) {
 
-        if (levelNumber + 1 > this.MaxLevelNumber)
-            this.MaxLevelNumber = levelNumber + 1;
+        if (levelNumber > this.MaxLevelNumber)
+            this.MaxLevelNumber = levelNumber;
 
         // Зачищаем объекты в игре.
         Game.hero = undefined;
@@ -253,15 +351,17 @@ var GameWindow = {
         backMusic = new Audio("sounds/background" + trackNumber + ".mp3");
         backMusic.loop = true;
         backMusic.volume = 0;
-        backMusic.play();
-        this._animateVolume(backMusic, 0.2, 1500); // плавное увеличение громкости.
+        if (!this.isMusicMuted) {
+            backMusic.play();
+            this._animateVolume(backMusic, 0.2, 1500); // плавное увеличение громкости.
+        }
         this.music.background = backMusic;
 
-        // Рендеринг уровня.
-        this.RenderLevel(fieldSize);
+        this.currentLevelLabel.text("Level " + (levelNumber + 1) + " of " + this.Levels.length);
+        this.prevLevelButton.set({ visible: levelNumber > 0 });
+        this.nextLevelButton.set({ visible: levelNumber < this.MaxLevelNumber });
 
-        // Обновляем номер текущего уровня после его загрузки.
-        this.controlChoosingLevel.value = levelNumber + 1;
+        this.RenderLevel(fieldSize);
         this.SaveCookies();
     },
 
@@ -269,7 +369,7 @@ var GameWindow = {
      * Сохраняем все настройки в куки.
      */
     SaveCookies : function(){
-        var value = GameWindow.CurrentLevel.Number + " " + GameWindow.MaxLevelNumber;
+        var value = this.CurrentLevel.Number + " " + this.MaxLevelNumber + " " + this.isMusicMuted;
         document.cookie = "Jogo=" + value + "; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/";
     },
 
@@ -283,17 +383,21 @@ var GameWindow = {
 
         var value = getCookieItem("Jogo"),
             currentLevel,
-            maxLevel;
+            maxLevel,
+            isMusicMuted;
 
         if (value) {
             value = value.split(" ");
             currentLevel = value[0];
             maxLevel = value[1];
+            isMusicMuted = (value[2] === 'true');
         } else {
             currentLevel = 0;
             maxLevel = 0;
+            isMusicMuted = false;
         }
 
+        this.isMusicMuted = isMusicMuted;
         this.MaxLevelNumber = maxLevel;
         this.LoadLevel(currentLevel);
     },
@@ -308,7 +412,8 @@ var GameWindow = {
 
         // Звук объединения монстров.
         var snd = new Audio("sounds/monster_combine.mp3");
-        snd.play();
+        if (!this.isMusicMuted)
+            snd.play();
 
         // Объект для отображения эффекта объединения монстров.
         var combineObj = new collie.DisplayObject({
@@ -418,7 +523,8 @@ var GameWindow = {
         }
 
         var walkSnd = this.music[walkSndFile];
-        walkSnd.play();
+        if (!this.isMusicMuted)
+            walkSnd.play();
 
         // Анимированное перемещение персонажа.
         obj.move(x, y, 100, function () {
@@ -445,9 +551,10 @@ var GameWindow = {
                 set : "opacity"
             });
 
-            GameWindow._animateVolume(GameWindow.music.background, 0, 500);
+            this._animateVolume(this.music.background, 0, 500);
             var snd = new Audio('sounds/victory.mp3');
-            snd.play();
+            if (!this.isMusicMuted)
+                snd.play();
         }
         else if(unit instanceof Hero || unit instanceof Monster) {
             var lose;
@@ -507,9 +614,10 @@ var GameWindow = {
                         set : "spriteX"
                     });
 
-                GameWindow._animateVolume(GameWindow.music.background, 0, 500);
+                this._animateVolume(this.music.background, 0, 500);
                 var snd = new Audio('sounds/fail.mp3');
-                snd.play();
+                if (!this.isMusicMuted)
+                    snd.play();
             }
         }
     },
@@ -622,9 +730,7 @@ var GameWindow = {
                 if(cellObj.get('spriteX'))
                     cellObj.set('spriteX', 2);
 
-                var clickSnd = new Audio('sounds/click.mp3');
-                clickSnd.volume = 0.3;
-                clickSnd.play();
+                GameWindow._playClickSound();
             },
             mouseup : function (e) {
                 if(cellObj.get('spriteX'))
@@ -762,5 +868,18 @@ var GameWindow = {
         }
 
         return out;
+    },
+
+    /**
+     * Воспроизводит звук клика мышью на игровом поле, если он не отключен пользователем.
+     * @private
+     */
+    _playClickSound: function () {
+        if (this.isMusicMuted)
+            return;
+
+        var clickSnd = new Audio('sounds/click.mp3');
+        clickSnd.volume = 0.3;
+        clickSnd.play();
     }
 };
