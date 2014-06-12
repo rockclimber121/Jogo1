@@ -65,8 +65,8 @@ var GameWindow = {
             // Подсчитывается, чтобы вызвать onSuccess после завершения последней анимации.
             animationQueue: 1 + Game.monsters.length,
             onSuccess: function() {
-                $(this).trigger('success');
-                onSuccess();
+                if (onSuccess)
+                    onSuccess();
             }
         };
 
@@ -78,33 +78,40 @@ var GameWindow = {
     /**
      * Отобразить окно с игровым полем.
      * @param {string} canvasId идентификатор полотна для отрисовки окна
+     * @param {string} labelId идентификатор контрола для заголовка.
+     * @param {string} controlId идентификатор контрола для ввода номера уровня.
+     * @param {string} buttonId идентификатор кнопки для перехода на новый уровень.
      */
-    Init : function(canvasId) {
+    Init: function (canvasId, labelId, controlId, buttonId) {
         this.Levels = Levels.GetAllLevels();
+        this.canvas = document.getElementById(canvasId);
 
         // Загружаем графические ресурсы.
-        for (var imgKey in this.imageResources)
-            collie.ImageManager.add(imgKey, this.imageResources[imgKey]);
+        collie.ImageManager.add(this.imageResources, function () {
+            // Графические ресурсы загружены.
 
-        this.canvas = document.getElementById(canvasId);
-        Game.Init(canvasId);
+            Game.Init(canvasId);
 
-        Game.LoseEvent = function() {
-            setTimeout(function() {
-                GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
-                Game.EndTurn();
-            }, 2500);
-        };
+            Game.LoseEvent = function () {
+                setTimeout(function () {
+                    GameWindow.LoadLevel(GameWindow.CurrentLevel.Number);
+                    Game.EndTurn();
+                }, 2500);
+            };
 
-        Game.WinEvent = function() {
-            setTimeout(function() {
-                var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
-                if(numberNextLevel < GameWindow.Levels.length)
-                    GameWindow.LoadLevel(numberNextLevel);
-                else
-                    alert('The End');
-            }, 2500);
-        };
+            Game.WinEvent = function () {
+                setTimeout(function () {
+                    var numberNextLevel = GameWindow.CurrentLevel.Number + 1;
+                    if (numberNextLevel < GameWindow.Levels.length)
+                        GameWindow.LoadLevel(numberNextLevel);
+                    else
+                        alert('The End');
+                }, 2500);
+            };
+
+            GameWindow.RegisterLevelChoosingControl(labelId, controlId, buttonId);
+            GameWindow.LoadCookies();
+        });
     },
 
     /**
@@ -113,15 +120,15 @@ var GameWindow = {
      * @param {string} controlId идентификатор контрола для ввода номера уровня.
      * @param {string} buttonId идентификатор кнопки для перехода на новый уровень.
      */
-    RegisterLevelChoosingControl : function(labelId, controlId, buttonId) {
-        $("#" + labelId).text("Level number of " + this.Levels.length);
+    RegisterLevelChoosingControl: function (labelId, controlId, buttonId) {
+        document.getElementById(labelId).textContent = "Level number of " + this.Levels.length;
 
-        var controlChoosingLevel = $("#" + controlId);
+        var controlChoosingLevel = document.getElementById(controlId);
         this.controlChoosingLevel = controlChoosingLevel;
-        var button = $("#" + buttonId)[0];
+        var button = document.getElementById(buttonId);
 
         button.onclick = function() {
-            var value = controlChoosingLevel.val() - 0;
+            var value = controlChoosingLevel.value - 0;
 
             if(value > 0 && value <= GameWindow.MaxLevelNumber)
                 GameWindow.LoadLevel(value - 1);
@@ -235,7 +242,7 @@ var GameWindow = {
         Game.gameOver = false;
 
         // Пересоздаем уровень игры.
-        var fieldSize = { width : $(this.canvas).width(), height : $(this.canvas).height() };
+        var fieldSize = { width: this.canvas.offsetWidth, height: this.canvas.offsetHeight };
         this.CurrentLevel = new Level(this.Levels[levelNumber], levelNumber, fieldSize);
 
         // Музыкальное сопровождение - фоновая музыка.
@@ -247,14 +254,14 @@ var GameWindow = {
         backMusic.loop = true;
         backMusic.volume = 0;
         backMusic.play();
-        $(backMusic).animate({volume: 0.2}, 1500); // плавное увеличение громкости.
+        this._animateVolume(backMusic, 0.2, 1500); // плавное увеличение громкости.
         this.music.background = backMusic;
 
         // Рендеринг уровня.
         this.RenderLevel(fieldSize);
 
         // Обновляем номер текущего уровня после его загрузки.
-        this.controlChoosingLevel.val(levelNumber + 1);
+        this.controlChoosingLevel.value = levelNumber + 1;
         this.SaveCookies();
     },
 
@@ -262,24 +269,33 @@ var GameWindow = {
      * Сохраняем все настройки в куки.
      */
     SaveCookies : function(){
-        $.cookie.json = true;
-        $.cookie('Jogo', {
-            currentLevel : GameWindow.CurrentLevel.Number,
-            maxLevel : GameWindow.MaxLevelNumber
-        }, { expires : 365 });
+        var value = GameWindow.CurrentLevel.Number + " " + GameWindow.MaxLevelNumber;
+        document.cookie = "Jogo=" + value + "; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/";
     },
 
     /**
      * Загружаем все настройки из куков.
      */
     LoadCookies : function(){
-        $.cookie.json = true;
-        var cookies = $.cookie("Jogo");
+        var getCookieItem = function (sKey) {
+            return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+        };
 
-        if(cookies){
-            this.MaxLevelNumber = cookies.maxLevel;
-            this.LoadLevel(cookies.currentLevel);
+        var value = getCookieItem("Jogo"),
+            currentLevel,
+            maxLevel;
+
+        if (value) {
+            value = value.split(" ");
+            currentLevel = value[0];
+            maxLevel = value[1];
+        } else {
+            currentLevel = 0;
+            maxLevel = 0;
         }
+
+        this.MaxLevelNumber = maxLevel;
+        this.LoadLevel(currentLevel);
     },
 
     /**
@@ -341,13 +357,15 @@ var GameWindow = {
 
         var cell = unit.CurrentPosition;
         var prevCell = obj.get('prevCell');
-        obj.set('prevCell', $.extend({}, cell));
+        obj.set('prevCell', GameWindow._extend({}, cell));
 
         if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
-            if(unit.deleted) {
-                $(successInfo).on('success', function() {
+            if (unit.deleted) {
+                var oldSuccessFunc = successInfo.onSuccess;
+                successInfo.onSuccess = function() {
                     GameWindow._combineMonsters(cell, obj);
-                });
+                    oldSuccessFunc();
+                };
             }
             else {
                 obj.setImage(imgName);
@@ -427,7 +445,7 @@ var GameWindow = {
                 set : "opacity"
             });
 
-            $(GameWindow.music.background).animate({volume: 0}, 500);
+            GameWindow._animateVolume(GameWindow.music.background, 0, 500);
             var snd = new Audio('sounds/victory.mp3');
             snd.play();
         }
@@ -489,7 +507,7 @@ var GameWindow = {
                         set : "spriteX"
                     });
 
-                $(GameWindow.music.background).animate({volume: 0}, 500);
+                GameWindow._animateVolume(GameWindow.music.background, 0, 500);
                 var snd = new Audio('sounds/fail.mp3');
                 snd.play();
             }
@@ -548,7 +566,7 @@ var GameWindow = {
 
         if(unit) {
             obj.set('unit', unit); // связанный с объектом collie персонаж игры.
-            obj.set('prevCell', $.extend({}, unit.CurrentPosition)); // запомним позицию.
+            obj.set('prevCell', GameWindow._extend({}, unit.CurrentPosition)); // запомним позицию.
         }
 
         obj.addTo(unit ? this.charLayer : this.bkgdLayer);
@@ -693,5 +711,56 @@ var GameWindow = {
                     break;
             }
         }
+    },
+
+    /**
+     * Плавно изменить громкость объекта Audio.
+     * @param {Audio} audio Аудиозапись.
+     * @param {number} targetVolume Целевая громкость от 0 до 1.
+     * @param {number} interval Суммарное время, за которое произойдет плавное изменение громкости.
+     * @private
+     */
+    _animateVolume: function (audio, targetVolume, interval) {
+        var volume = audio.volume,
+            isFadeOut = (volume > targetVolume),
+            sign = isFadeOut ? -1 : 1,
+            deltaVolume = isFadeOut ? (volume - targetVolume) : (targetVolume - volume),
+            stepVolume = 0.05,
+            intervalStep = Math.round(interval / (deltaVolume / stepVolume));
+
+        var intervalId = setInterval(function () {
+            if (isFadeOut ? volume > targetVolume : volume < targetVolume) {
+                volume += stepVolume * sign;
+                volume = Number(volume.toFixed(2));
+                audio.volume = volume;
+            }
+            else {
+                clearInterval(intervalId);
+                audio.volume = targetVolume;
+            }
+        }, intervalStep);
+    },
+
+    /**
+     * Расширяет объект, объединяя свойства из объектов, переданных в аргументах после него.
+     * @param {object} out Объект, который нужно расширить.
+     * @param {...object} objects Объекты, свойства которых будут объединены с объектом out.
+     * @return {object} Расширенный объект out.
+     * @private
+     */
+    _extend : function(out) {
+        out = out || {};
+
+        for (var i = 1; i < arguments.length; i++) {
+            if (!arguments[i])
+                continue;
+
+            for (var key in arguments[i]) {
+                if (arguments[i].hasOwnProperty(key))
+                    out[key] = arguments[i][key];
+            }
+        }
+
+        return out;
     }
 };

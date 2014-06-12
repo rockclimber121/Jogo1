@@ -111,11 +111,12 @@ var Game = {
        Game.DoOneStepForMonsters(function() {
            // После того как все отходили, проставляем их ходы обратно.
            // Для попавших в ловушку уменьшаем время простоя.
-           $.each(Game.monsters, function() {
-               this.Steps = this.Power;
-               if(this.SkipTurns > 0)
-                   this.SkipTurns--;
-           });
+           for (var i = 0; i < Game.monsters.length; i++) {
+               var monster = Game.monsters[i];
+               monster.Steps = monster.Power;
+               if (monster.SkipTurns > 0)
+                   monster.SkipTurns--;
+           }
        });
     },
 
