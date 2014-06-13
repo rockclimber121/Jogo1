@@ -1,1 +1,2 @@
-79e131aa-5a23-40ed-b305-6fc509b4277f
+"Simple" logical game.
+Play on http://nagits.github.io/Jogo1
