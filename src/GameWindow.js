@@ -271,7 +271,7 @@ Jogo.GameWindow = {
             x : 0,
             y : 0,
             width : fieldSize.width,
-            height: fieldSize.height,
+            height: fieldSize.height
             //// Фон задан в css стиле элемента GameContainer.
             //// Если фон контейнера и игрового поля совпадают, то здесь можно не указывать (будет прозрачным).
             //// backgroundImage : "background",
