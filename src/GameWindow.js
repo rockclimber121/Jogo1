@@ -373,8 +373,8 @@ Jogo.GameWindow = {
 
         if (value) {
             value = value.split(" ");
-            currentLevel = value[0];
-            maxLevel = value[1];
+            currentLevel = parseInt(value[0]);
+            maxLevel = parseInt(value[1]);
             isMusicMuted = (value[2] === 'true');
         } else {
             currentLevel = 0;
