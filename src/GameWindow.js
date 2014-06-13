@@ -11,22 +11,22 @@ Jogo.GameWindow = {
     /**
      * Все уровни игры в первоначальном формате.
      */
-    Levels : [],
+    Levels: [],
 
     /**
      * Текущий уровень. Его реальная объектная модель.
      */
-    CurrentLevel : undefined,
+    CurrentLevel: undefined,
 
     /**
      * Номер самого последнего доступного для прохождения уровня.
      */
-    MaxLevelNumber : 200,
+    MaxLevelNumber: 200,
 
     /**
      * Графические ресурсы игрового поля.
      */
-    imageResources : {
+    imageResources: {
         enemy: "images/enemy.png", // Вражеский персонаж с силой 1.
         trappedEnemy: "images/trappedEnemy.png", // Вражеский персонаж с силой 1, застрявший в ловушке.
         enemy2: "images/enemy2.png", // Вражеский персонаж с силой 2.
@@ -42,6 +42,25 @@ Jogo.GameWindow = {
         heroTrapped: "images/heroTrapped.png", // Герой оказался в ловушке (Trap) - проигрыш.
         enemyCombining: "images/enemyCombining.png", // Эффект при объединении монстров.
         controls: "images/controls.png" // Изображения кнопок на панели контролов игры.
+    },
+
+    /**
+     * Звуковые ресурсы игры.
+     */
+    soundResources: {
+        // Фоновая музыка игры.
+        background1: 'sounds/background1.mp3',
+        background2: 'sounds/background2.mp3',
+        background3: 'sounds/background3.mp3',
+        background4: 'sounds/background4.mp3',
+        background5: 'sounds/background5.mp3',
+
+        monsterCombine: 'sounds/monster_combine.mp3' /* Монстры объединяются друг с другом */,
+        heroWalk: 'sounds/hero_walk.mp3' /* Ходьба героя */,
+        monsterWalk: 'sounds/monster_walk.mp3' /* Ходьба монстра */,
+        roundVictory: 'sounds/victory.mp3' /* Раунд пройден */,
+        roundFail: 'sounds/fail.mp3' /* Раунд проигран */,
+        click: 'sounds/click.mp3' /* Щелчок мышью на игровом поле */
     },
 
     /**
@@ -186,11 +205,9 @@ Jogo.GameWindow = {
                         for (var key in music)
                             music[key].pause();
                     } else {
-                        Jogo.GameWindow._playClickSound();
-
                         e.displayObject.set('spriteX', 1);
-                        music.background.play();
-                        Jogo.GameWindow._animateVolume(music.background, 0.2, 1500); // плавное увеличение громкости.
+                        Jogo.GameWindow._playClickSound();
+                        Jogo.GameWindow._playBackgroundSound();
                     }
                 }
             })
@@ -361,19 +378,7 @@ Jogo.GameWindow = {
         var fieldSize = { width: this.gameField.offsetWidth, height: this.gameField.offsetHeight };
         this.CurrentLevel = new Jogo.Level(this.Levels[levelNumber], levelNumber, fieldSize);
 
-        // Музыкальное сопровождение - фоновая музыка.
-        var backMusic = this.music.background;
-        if(backMusic)
-            backMusic.pause();
-        var trackNumber = Math.floor((Math.random()*5)+1); // random 1..5
-        backMusic = new Audio("sounds/background" + trackNumber + ".mp3");
-        backMusic.loop = true;
-        backMusic.volume = 0;
-        if (!this.isMusicMuted) {
-            backMusic.play();
-            this._animateVolume(backMusic, 0.2, 1500); // плавное увеличение громкости.
-        }
-        this.music.background = backMusic;
+        this._playRandomBackgroundSound();
 
         this.currentLevelLabel.text("Level " + (levelNumber + 1) + " of " + this.Levels.length);
         this.prevLevelButton.set({ visible: levelNumber > 0 });
@@ -429,9 +434,10 @@ Jogo.GameWindow = {
     _combineMonsters : function(cell, deletedUnitObj) {
 
         // Звук объединения монстров.
-        var snd = new Audio("sounds/monster_combine.mp3");
-        if (!this.isMusicMuted)
+        if (!this.isMusicMuted) {
+            var snd = new Audio(this.soundResources.monsterCombine);
             snd.play();
+        }
 
         // Объект для отображения эффекта объединения монстров.
         var combineObj = new collie.DisplayObject({
@@ -533,20 +539,24 @@ Jogo.GameWindow = {
             y = cell.Y + (cell.Height - obj.get('height')) / 2;
 
         // Звук перемещения персонажа.
-        var walkSndFile = (unit instanceof Jogo.Hero ? 'sounds/hero_walk.mp3' : 'sounds/monster_walk.mp3');
-        if(!this.music[walkSndFile]) {
-            var snd = new Audio(walkSndFile);
-            snd.loop = true;
-            this.music[walkSndFile] = snd;
-        }
+        var walkSnd;
+        if (!this.isMusicMuted) {
+            var walkSndFile = (unit instanceof Jogo.Hero ? this.soundResources.heroWalk : this.soundResources.monsterWalk);
+            if (!this.music[walkSndFile]) {
+                var snd = new Audio(walkSndFile);
+                snd.loop = true;
+                this.music[walkSndFile] = snd;
+            }
 
-        var walkSnd = this.music[walkSndFile];
-        if (!this.isMusicMuted)
+            walkSnd = this.music[walkSndFile];
             walkSnd.play();
+        }
 
         // Анимированное перемещение персонажа.
         obj.move(x, y, 100, function () {
-            walkSnd.pause();
+            if (walkSnd)
+                walkSnd.pause();
+
             objAnimation.stop();
             obj.set('animation', null);
             obj.set('spriteX', 0);
@@ -569,10 +579,11 @@ Jogo.GameWindow = {
                 set : "opacity"
             });
 
-            this._animateVolume(this.music.background, 0, 500);
-            var snd = new Audio('sounds/victory.mp3');
-            if (!this.isMusicMuted)
+            if (!this.isMusicMuted) {
+                this._animateVolume(this.music.background, 0, 500);
+                var snd = new Audio(this.soundResources.roundVictory);
                 snd.play();
+            }
         }
         else if (unit instanceof Jogo.Hero || unit instanceof Jogo.Monster) {
             var lose;
@@ -632,10 +643,11 @@ Jogo.GameWindow = {
                         set : "spriteX"
                     });
 
-                this._animateVolume(this.music.background, 0, 500);
-                var snd = new Audio('sounds/fail.mp3');
-                if (!this.isMusicMuted)
+                if (!this.isMusicMuted) {
+                    this._animateVolume(this.music.background, 0, 500);
+                    var snd = new Audio(this.soundResources.roundFail);
                     snd.play();
+                }
             }
         }
     },
@@ -896,9 +908,55 @@ Jogo.GameWindow = {
         if (this.isMusicMuted)
             return;
 
-        var clickSnd = new Audio('sounds/click.mp3');
+        var clickSnd = new Audio(this.soundResources.click);
         clickSnd.volume = 0.3;
         clickSnd.play();
+    },
+
+    /**
+     * Воспроизводит фоновый звук в игре.
+     * @private
+     */
+    _playBackgroundSound: function () {
+        if (this.isMusicMuted)
+            return;
+
+        var backMusic = this.music.background;
+        if (backMusic) {
+            backMusic.play();
+            this._animateVolume(backMusic, 0.2, 1500); // плавное увеличение громкости.
+        } else {
+            this._playRandomBackgroundSound();
+        }
+    },
+
+    /**
+     * Воспроизводит новый фоновый трек в игре.
+     * @private
+     */
+    _playRandomBackgroundSound: function () {
+        if (this.isMusicMuted) {
+            this.music.background = null;
+            return;
+        }
+
+        var backMusic = this.music.background;
+        if (backMusic)
+            backMusic.pause();
+
+        var backgroundTrackNames = Object.keys(this.soundResources).filter(function (res) {
+            return res.indexOf('background') === 0;
+        });
+
+        // random 0..backgroundTracks.length
+        var trackNumber = Math.floor((Math.random() * backgroundTrackNames.length));
+
+        var trackFile = this.soundResources[backgroundTrackNames[trackNumber]];
+        backMusic = new Audio(trackFile);
+        backMusic.loop = true;
+        backMusic.volume = 0;
+        this.music.background = backMusic;
+        this._playBackgroundSound();
     }
 };
 
