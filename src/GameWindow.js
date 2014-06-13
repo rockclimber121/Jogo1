@@ -162,8 +162,10 @@ Jogo.GameWindow = {
                     Jogo.GameWindow.isMusicMuted = !Jogo.GameWindow.isMusicMuted;
                     if (Jogo.GameWindow.isMusicMuted) {
                         e.displayObject.set('spriteX', 2);
-                        for (var key in music)
-                            music[key].pause();
+                        for (var key in music) {
+                            if (music[key])
+                                music[key].pause();
+                        }
                     } else {
                         e.displayObject.set('spriteX', 1);
                         Jogo.GameWindow._playClickSound();
