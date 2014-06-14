@@ -34,19 +34,32 @@ Jogo.GameWindow = {
     isMusicMuted: false,
 
     /**
+     * Временная отметка начала раунда (unix timestamp).
+     */
+    levelTimestamp: undefined,
+
+    /**
      * Перерисовывает поле в соответсвии с текущим значением ячеек cells.
      * @param {function} onSuccess Callback-функция, уведомляющая об окончании перерисовки поля.
      *                             Вызывается после завершения последней анимации.
      */
-    Redraw : function(onSuccess) {
+    Redraw: function (onSuccess) {
+
+        var cachedLevelTimestamp = this.levelTimestamp;
 
         var redrawSuccessInfo = {
             // Количество анимаций в очереди (hero + monsters).
             // Подсчитывается, чтобы вызвать onSuccess после завершения последней анимации.
             animationQueue: 1 + Jogo.Game.monsters.length,
-            onSuccess: function() {
-                if (onSuccess)
+            beforeSuccess: null,
+            onSuccess: function () {
+                var levelChangedOrRestarted = (cachedLevelTimestamp != Jogo.GameWindow.levelTimestamp);
+                if (onSuccess && !levelChangedOrRestarted) {
+                    if (this.beforeSuccess)
+                        this.beforeSuccess();
+
                     onSuccess();
+                }
             }
         };
 
@@ -88,14 +101,26 @@ Jogo.GameWindow = {
             Jogo.Game.Init(gameField);
 
             Jogo.Game.LoseEvent = function () {
+                var cachedLevelTimestamp = Jogo.GameWindow.levelTimestamp;
+
                 setTimeout(function () {
+                    var levelChangedOrRestarted = (cachedLevelTimestamp != Jogo.GameWindow.levelTimestamp);
+                    if (levelChangedOrRestarted)
+                        return;
+
                     Jogo.GameWindow.LoadLevel(Jogo.GameWindow.CurrentLevel.Number);
                     Jogo.Game.EndTurn();
                 }, 2500);
             };
 
             Jogo.Game.WinEvent = function () {
+                var cachedLevelTimestamp = Jogo.GameWindow.levelTimestamp;
+
                 setTimeout(function () {
+                    var levelChangedOrRestarted = (cachedLevelTimestamp != Jogo.GameWindow.levelTimestamp);
+                    if (levelChangedOrRestarted)
+                        return;
+
                     var numberNextLevel = Jogo.GameWindow.CurrentLevel.Number + 1;
                     if (numberNextLevel < Jogo.GameWindow.Levels.length)
                         Jogo.GameWindow.LoadLevel(numberNextLevel);
@@ -141,8 +166,7 @@ Jogo.GameWindow = {
             .attach({
                 click: function() {
                     Jogo.GameWindow._playClickSound();
-
-                    // TODO: Баг, если монстр еще не завершил ход, то он сходит после перезапуска уровня.
+                    Jogo.Game.EndTurn();
                     Jogo.GameWindow.LoadLevel(Jogo.GameWindow.CurrentLevel.Number);
                 }
             })
@@ -346,6 +370,8 @@ Jogo.GameWindow = {
         this.prevLevelButton.set({ visible: levelNumber > 0 });
         this.nextLevelButton.set({ visible: levelNumber < this.MaxLevelNumber });
 
+        this.levelTimestamp = +new Date;
+
         this.RenderLevel(fieldSize);
         this.SaveCookies();
     },
@@ -450,19 +476,21 @@ Jogo.GameWindow = {
         var prevCell = obj.get('prevCell');
         obj.set('prevCell', Jogo.GameWindow._extend({}, cell));
 
-        if(prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
+        if (prevCell.Col === cell.Col && prevCell.Row === cell.Row) {
             if (unit.deleted) {
-                var oldSuccessFunc = successInfo.onSuccess;
-                successInfo.onSuccess = function() {
+                var oldBeforeSuccess = successInfo.beforeSuccess;
+                successInfo.beforeSuccess = function () {
+                    if (oldBeforeSuccess)
+                        oldBeforeSuccess();
+
                     Jogo.GameWindow._combineMonsters(cell, obj);
-                    oldSuccessFunc();
                 };
             }
             else {
                 obj.setImage(imgName);
             }
 
-            if(--successInfo.animationQueue === 0)
+            if (--successInfo.animationQueue === 0)
                 successInfo.onSuccess();
 
             return;
@@ -523,12 +551,19 @@ Jogo.GameWindow = {
             obj.set('animation', null);
             obj.set('spriteX', 0);
 
-            if (unit.deleted)
-                Jogo.GameWindow._combineMonsters(cell, obj);
-            else
-                obj.setImage(imgName);
+            if (unit.deleted) {
+                var oldBeforeSuccess = successInfo.beforeSuccess;
+                successInfo.beforeSuccess = function () {
+                    if (oldBeforeSuccess)
+                        oldBeforeSuccess();
 
-            if(--successInfo.animationQueue === 0)
+                    Jogo.GameWindow._combineMonsters(cell, obj);
+                };
+            } else {
+                obj.setImage(imgName);
+            }
+
+            if (--successInfo.animationQueue === 0)
                 successInfo.onSuccess();
         });
 
