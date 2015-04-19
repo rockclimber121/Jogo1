@@ -98,9 +98,7 @@ Jogo.GameWindow = {
         collie.ImageManager.add(this.imageResources, function () {
             // Графические ресурсы загружены.
 
-            Jogo.Game.Init(gameField);
-
-            Jogo.Game.LoseEvent = function () {
+            Jogo.Game.LoseEvent = function() {
                 var cachedLevelTimestamp = Jogo.GameWindow.levelTimestamp;
 
                 setTimeout(function () {
@@ -113,7 +111,7 @@ Jogo.GameWindow = {
                 }, 2500);
             };
 
-            Jogo.Game.WinEvent = function () {
+            Jogo.Game.WinEvent = function() {
                 var cachedLevelTimestamp = Jogo.GameWindow.levelTimestamp;
 
                 setTimeout(function () {
@@ -712,12 +710,35 @@ Jogo.GameWindow = {
         return obj;
     },
 
+    _updateCellSprite: function (cellObj, cell, e) {
+        // true, если объект находится под точкой [e.x, e.y].
+        var cellHit = collie.LayerEvent.prototype._isPointInDisplayObjectBoundary(cellObj, e.x, e.y);
+
+        var heroCell = Jogo.Game.hero.CurrentPosition,
+            colDistance = Math.abs(heroCell.Col - cell.Col),
+            rowDistance = Math.abs(heroCell.Row - cell.Row);
+
+        // true, если cell и heroCell находятся рядом.
+        var nearHero = (colDistance + rowDistance === 1);
+
+        var spriteX;
+        if (Jogo.Game.animating || Jogo.Game.gameOver)
+            spriteX = 0;
+        else if (cellHit && nearHero)
+            spriteX = e.event.which ? 2 : 1;
+        else
+            spriteX = 0;
+
+        cellObj.set('spriteX', spriteX);
+    },
+
     /**
      * Отрисовка ячейки.
      * @param {object} cell Ячейка игрового поля.
      * @private
      */
     _drawCell : function(cell) {
+        var _this = this;
 
         // Отрисовка пустой ячейки.
         var cellObj = new collie.Rectangle({
@@ -725,6 +746,7 @@ Jogo.GameWindow = {
             height: cell.Height,
             x: cell.X,
             y: cell.Y,
+            cell: cell,
             backgroundImage: 'cell',
             useEvent: true // для поддержки метода _isPointInDisplayObjectBoundary (см. ниже).
         }).addTo(this.bkgdLayer);
@@ -733,38 +755,21 @@ Jogo.GameWindow = {
         // collie.DisplayObject не поддерживает событие mousemove. Поэтому подписываемся на весь слой.
         this.bkgdLayer.attach({
             mousemove : function (e) {
-                // true, если объект находится под точкой [e.x, e.y].
-                var cellHit = collie.LayerEvent.prototype._isPointInDisplayObjectBoundary(cellObj, e.x, e.y);
-
-                var heroCell = Jogo.Game.hero.CurrentPosition,
-                    colDistance = Math.abs(heroCell.Col - cell.Col),
-                    rowDistance = Math.abs(heroCell.Row - cell.Row);
-
-                // true, если cell и heroCell находятся рядом.
-                var nearHero = (colDistance + rowDistance === 1);
-
-                var spriteX;
-                if (Jogo.Game.animating || Jogo.Game.gameOver)
-                    spriteX = 0;
-                else if(cellHit && nearHero)
-                    spriteX = e.event.which ? 2 : 1;
-                else
-                    spriteX = 0;
-
-                cellObj.set('spriteX', spriteX);
+                _this._updateCellSprite(cellObj, cell, e);
             }
         });
 
         // Выделение ячейки при нажатии кнопки мыши.
         cellObj.attach({
             mousedown : function (e) {
-                if(cellObj.get('spriteX'))
-                    cellObj.set('spriteX', 2);
-
-                Jogo.GameWindow._playClickSound();
+                var cellObj = e.displayObject;
+                var cell = cellObj.get('cell');
+                _this._updateCellSprite(cellObj, cell, e);
+                _this._playClickSound();
+                Jogo.Game.Click(cell);
             },
             mouseup : function (e) {
-                if(cellObj.get('spriteX'))
+                if (cellObj.get('spriteX'))
                     cellObj.set('spriteX', 1);
             }
         });

@@ -3,7 +3,7 @@
  */
 Jogo.Game = {
     /**
-     * Делегат. Срабатывает, когда пользователь выйграл.
+     * Делегат. Срабатывает, когда пользователь выиграл.
      */
     WinEvent : undefined,
 
@@ -37,27 +37,16 @@ Jogo.Game = {
      */
     hero : undefined,
 
-    /**
-     * Инициализирует игру. Создание подписчиков на события.
-     * @param {Object} gameField DOM-объект игрового поля.
-     */
-    Init: function (gameField) {
-        // Подписываемся на событие клика по полотну, чтобы определять, куда хочет сходить пользователь.
-        gameField.addEventListener('click', function (event) {
-            if (Jogo.Game.gameOver || Jogo.Game.animating)
-                return;
+    Click: function (cell) {
+        if (Jogo.Game.gameOver || Jogo.Game.animating)
+            return;
 
-            Jogo.Game.animating = true;
+        Jogo.Game.animating = true;
 
-            var rect = gameField.getBoundingClientRect();
-            var cell = Jogo.GameWindow.CurrentLevel.GetCellByCoordinates(event.pageX - rect.left, event.pageY - rect.top);
-
-            if(cell)
-                Jogo.Game.TryDoStep(cell);
-            else
-                Jogo.Game.EndTurn();
-
-        }, false);
+        if (cell)
+            Jogo.Game.TryDoStep(cell);
+        else
+            Jogo.Game.EndTurn();
     },
 
     /**
